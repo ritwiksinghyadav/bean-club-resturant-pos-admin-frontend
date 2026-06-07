@@ -10,7 +10,6 @@ import {
   Phone,
   X,
   Coffee,
-  Gift,
   Coins,
   History,
   TrendingUp
@@ -73,7 +72,6 @@ export default function CustomerLoyalty() {
 
   if (!mounted) return null;
 
-  // Handle Authentication for guest
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!authName || !authPhone) {
@@ -92,7 +90,8 @@ export default function CustomerLoyalty() {
       const data = await res.json();
 
       if (data.success && data.result) {
-        const { token: newToken, user } = data.result;
+        const { accessToken, user } = data.result;
+        const newToken = accessToken;
         setAuth(newToken, user);
         toast.success(`Welcome, ${user.name}!`);
         setIsAuthOpen(false);
@@ -122,49 +121,47 @@ export default function CustomerLoyalty() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-slate-50 pb-24 font-sans text-slate-900">
       {/* Header */}
-      <header className="px-6 py-5 bg-gradient-to-b from-[#1c120e] to-transparent border-b border-[#2d1b13]/20">
-        <h1 className="text-xl font-bold tracking-tight text-amber-100 flex items-center gap-2">
-          <Award className="w-5 h-5 text-amber-500" />
-          Bean Club Rewards
-        </h1>
-        <p className="text-xs text-neutral-400">Earn points on every brew</p>
+      <header className="px-4 py-3 bg-white shadow-sm flex justify-between items-center sticky top-0 z-30">
+        <div className="flex items-center gap-2 text-red-600">
+          <Award className="w-5 h-5" />
+          <h1 className="text-xl font-black tracking-tight">Bean Club Rewards</h1>
+        </div>
       </header>
 
       {/* Main Panel */}
-      <div className="flex-1 px-6 py-4 space-y-6">
+      <div className="flex-1 px-4 py-4 max-w-2xl mx-auto w-full space-y-6">
         {!token ? (
           /* Login Screen for Guests */
-          <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
-            <div className="w-16 h-16 rounded-3xl bg-[#1c130f] border border-[#2d1b13]/40 flex items-center justify-center text-amber-500 shadow-xl">
+          <div className="flex flex-col items-center justify-center py-20 text-center space-y-6 bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+            <div className="w-16 h-16 rounded-3xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600 shadow-sm">
               <Lock className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-amber-100">Verification Required</h3>
-              <p className="text-xs text-neutral-400 mt-2 max-w-[250px] mx-auto leading-relaxed">
+              <h3 className="text-base font-bold text-slate-800">Verification Required</h3>
+              <p className="text-xs text-slate-500 mt-2 max-w-[250px] mx-auto leading-relaxed">
                 Log in with your name and phone number to see your order history and earned loyalty points.
               </p>
             </div>
             <button
               onClick={() => setIsAuthOpen(true)}
-              className="px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-2xl text-xs font-semibold shadow-lg shadow-amber-950/20 active:scale-95 transition-all"
+              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-red-600/10 active:scale-95"
             >
               Verify Customer Identity
             </button>
           </div>
         ) : loading && ledger.length === 0 ? (
           /* Loading States */
-          <div className="flex flex-col items-center justify-center py-20 text-neutral-400 space-y-2">
-            <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-            <p className="text-sm">Fetching points balance...</p>
+          <div className="flex flex-col items-center justify-center py-20 text-slate-500 space-y-3">
+            <Loader2 className="w-8 h-8 animate-spin text-red-500" />
+            <p className="text-sm font-medium">Fetching points balance...</p>
           </div>
         ) : (
           /* Loyalty Card & Statement */
           <div className="space-y-6">
             {/* Premium Gold Loyalty Card */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-amber-500 via-amber-600 to-amber-800 rounded-[2.5rem] p-6 text-white shadow-xl shadow-amber-950/30 flex flex-col justify-between aspect-[1.7/1] border border-amber-400/20">
-              {/* Card Decor */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 rounded-3xl p-6 text-white shadow-xl shadow-amber-600/10 flex flex-col justify-between aspect-[1.7/1] border border-amber-400/20">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-xl"></div>
               <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full -ml-8 -mb-8 blur-lg"></div>
 
@@ -179,7 +176,7 @@ export default function CustomerLoyalty() {
               </div>
 
               <div className="mt-8 z-10">
-                <p className="text-[10px] tracking-wider text-amber-100/70 font-semibold uppercase">TOTAL POINTS BALANCE</p>
+                <p className="text-[10px] tracking-wider text-amber-100/70 font-bold uppercase">TOTAL POINTS BALANCE</p>
                 <div className="flex items-baseline gap-1 mt-1">
                   <span className="text-4xl font-extrabold tracking-tight">{balance}</span>
                   <span className="text-xs font-bold text-amber-200">PTS</span>
@@ -187,54 +184,54 @@ export default function CustomerLoyalty() {
               </div>
             </div>
 
-            {/* Quick stats/info */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-[#1c130f]/60 border border-[#2d1b13]/40 rounded-3xl p-4 flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+            {/* Quick stats */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white border border-gray-100 shadow-sm rounded-3xl p-4 flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
                   <Coins className="w-4 h-4" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-neutral-400 font-medium">Earn Rate</p>
-                  <p className="text-xs font-bold text-amber-100">1 pt / $1</p>
+                  <p className="text-[10px] text-slate-400 font-semibold">Earn Rate</p>
+                  <p className="text-xs font-bold text-slate-700">1 pt / $1</p>
                 </div>
               </div>
-              <div className="bg-[#1c130f]/60 border border-[#2d1b13]/40 rounded-3xl p-4 flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+              <div className="bg-white border border-gray-100 shadow-sm rounded-3xl p-4 flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                   <TrendingUp className="w-4 h-4" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-neutral-400 font-medium">Spent Tier</p>
-                  <p className="text-xs font-bold text-emerald-500">Gold Status</p>
+                  <p className="text-[10px] text-slate-400 font-semibold">Value Rate</p>
+                  <p className="text-xs font-bold text-emerald-600">$0.10 / pt</p>
                 </div>
               </div>
             </div>
 
             {/* Statement Ledger */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-neutral-300">
-                <History className="w-4 h-4 text-amber-500" />
+              <div className="flex items-center gap-2 text-slate-700">
+                <History className="w-4 h-4 text-red-600" />
                 <h3 className="text-xs font-extrabold uppercase tracking-wider">Points Ledger Statement</h3>
               </div>
 
               {ledger.length === 0 ? (
-                <div className="bg-[#18100d]/90 border border-[#2d1b13]/40 rounded-3xl p-8 text-center text-neutral-500">
-                  <p className="text-xs">No ledger statements found.</p>
-                  <p className="text-[10px] text-neutral-600 mt-1">Order coffee to earn your first loyalty points!</p>
+                <div className="bg-white rounded-3xl border border-gray-100 p-8 text-center text-slate-500 shadow-sm">
+                  <p className="text-xs">No points statements found.</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Order coffee to earn your first loyalty points!</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {ledger.map((entry) => (
                     <div
                       key={entry.id}
-                      className="bg-[#18100d]/90 border border-[#2d1b13]/40 rounded-2xl p-4 flex justify-between items-center hover:border-[#4d3225]/45 transition-all duration-300"
+                      className="bg-white border border-gray-100 rounded-2xl p-4 flex justify-between items-center hover:border-red-200 shadow-sm transition-all duration-300"
                     >
                       <div>
-                        <p className="text-xs font-bold text-amber-100">{entry.description}</p>
-                        <p className="text-[10px] text-neutral-500 mt-1">
+                        <p className="text-xs font-bold text-slate-800">{entry.description}</p>
+                        <p className="text-[10px] text-slate-500 mt-1 font-semibold">
                           {formatLedgerDate(entry.createdAt)}
                         </p>
                       </div>
-                      <span className={`text-sm font-extrabold ${entry.points >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                      <span className={`text-sm font-extrabold ${entry.points >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                         {entry.points >= 0 ? `+${entry.points}` : entry.points} pts
                       </span>
                     </div>
@@ -248,59 +245,65 @@ export default function CustomerLoyalty() {
 
       {/* Guest Authentication Modal */}
       {isAuthOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm bg-[#160f0c] border border-[#2d1b13]/60 rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-sm font-bold text-amber-100 flex items-center gap-1.5">
-                <Lock className="w-4 h-4 text-amber-500" />
-                Customer Verification
+              <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                <User className="w-5 h-5 text-red-600" />
+                Your Details
               </h3>
               <button
                 onClick={() => setIsAuthOpen(false)}
-                className="p-1 rounded-full bg-neutral-800/50 hover:bg-neutral-800 text-neutral-400"
+                className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-slate-600"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-neutral-400 mb-5 leading-relaxed">
-              Verify your name and phone number to earn loyalty points and view your orders.
+            <p className="text-sm text-slate-500 mb-6">
+              Please enter your details to view your loyalty logs.
             </p>
 
             <form onSubmit={handleAuthSubmit} className="space-y-4">
-              <div className="relative flex items-center bg-[#1c130f]/60 border border-[#2d1b13]/40 rounded-2xl px-4 py-3 focus-within:border-amber-500/50 transition-all">
-                <User className="w-4 h-4 text-neutral-500 mr-2" />
-                <input
-                  type="text"
-                  placeholder="Your Name"
-                  className="bg-transparent text-xs w-full outline-none text-neutral-100 placeholder-neutral-500"
-                  value={authName}
-                  onChange={(e) => setAuthName(e.target.value)}
-                  required
-                />
+              <div className="relative">
+                <label className="text-xs font-bold text-slate-700 mb-1 block">Full Name</label>
+                <div className="flex items-center border border-gray-300 rounded-xl px-3 py-2.5 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500 transition-all bg-white">
+                  <User className="w-4 h-4 text-slate-400 mr-2" />
+                  <input
+                    type="text"
+                    placeholder="John Doe"
+                    className="w-full outline-none text-slate-800 text-sm placeholder-slate-400 font-medium"
+                    value={authName}
+                    onChange={(e) => setAuthName(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
 
-              <div className="relative flex items-center bg-[#1c130f]/60 border border-[#2d1b13]/40 rounded-2xl px-4 py-3 focus-within:border-amber-500/50 transition-all">
-                <Phone className="w-4 h-4 text-neutral-500 mr-2" />
-                <input
-                  type="tel"
-                  placeholder="Phone Number"
-                  className="bg-transparent text-xs w-full outline-none text-neutral-100 placeholder-neutral-500"
-                  value={authPhone}
-                  onChange={(e) => setAuthPhone(e.target.value)}
-                  required
-                />
+              <div className="relative">
+                <label className="text-xs font-bold text-slate-700 mb-1 block">Phone Number</label>
+                <div className="flex items-center border border-gray-300 rounded-xl px-3 py-2.5 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500 transition-all bg-white">
+                  <Phone className="w-4 h-4 text-slate-400 mr-2" />
+                  <input
+                    type="tel"
+                    placeholder="Enter phone number..."
+                    className="w-full outline-none text-slate-800 text-sm placeholder-slate-400 font-medium"
+                    value={authPhone}
+                    onChange={(e) => setAuthPhone(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
 
               <button
                 type="submit"
                 disabled={authLoading}
-                className="w-full bg-amber-600 hover:bg-amber-500 disabled:bg-amber-800 text-white py-3.5 rounded-2xl font-bold text-xs transition-all duration-200 flex justify-center items-center gap-1.5"
+                className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white py-3.5 rounded-xl font-bold text-sm transition-all mt-6 shadow-md shadow-red-600/20 flex justify-center items-center gap-2 active:scale-95"
               >
                 {authLoading ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Authenticating...
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Verifying...
                   </>
                 ) : (
                   'Confirm & Verify'

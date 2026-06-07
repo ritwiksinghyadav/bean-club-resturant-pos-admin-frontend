@@ -25,7 +25,7 @@ interface CartState {
   removeItem: (menuItemId: string, variantId?: string) => void;
   updateQuantity: (menuItemId: string, quantity: number, variantId?: string) => void;
   clearCart: () => void;
-  setAuth: (token: string, customer: Customer) => void;
+  setAuth: (token: string | null, customer: Customer | null) => void;
   logout: () => void;
 }
 

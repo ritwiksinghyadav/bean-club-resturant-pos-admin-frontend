@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Coffee, Receipt, Award, ShoppingBag } from 'lucide-react';
 import { useCartStore } from './cart-store';
-import { Toaster } from 'sonner';
 
 export default function UsersLayout({
   children,
@@ -79,7 +78,6 @@ export default function UsersLayout({
           </nav>
         )}
       </div>
-      <Toaster position="top-center" theme="dark" closeButton />
     </div>
   );
 }
