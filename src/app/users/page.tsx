@@ -48,13 +48,13 @@ export default function CustomerMenu() {
   }, [mounted, storeToken, storeCustomer]);
 
   // Silent re-authentication
-  const silentReauthHelper = async (phoneNumber: string): Promise<string | null> => {
+  const silentReauthHelper = async (phoneNumber: string, name?: string): Promise<string | null> => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
       const res = await fetch(`${apiUrl}/users/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber }),
+        body: JSON.stringify({ phoneNumber, name }),
       });
       if (res.status >= 400 && res.status < 500) {
         setAuth(null, null);
@@ -79,7 +79,7 @@ export default function CustomerMenu() {
   useEffect(() => {
     if (!mounted) return;
     if (!storeToken && storeCustomer?.phoneNumber) {
-      silentReauthHelper(storeCustomer.phoneNumber);
+      silentReauthHelper(storeCustomer.phoneNumber, storeCustomer.name);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted, storeToken, storeCustomer]);
@@ -129,7 +129,7 @@ export default function CustomerMenu() {
         headers: { Authorization: `Bearer ${authToken}` },
       });
       if (res.status === 401 && storeCustomer?.phoneNumber) {
-        const newToken = await silentReauthHelper(storeCustomer.phoneNumber);
+        const newToken = await silentReauthHelper(storeCustomer.phoneNumber, storeCustomer.name);
         if (newToken) {
           const retry = await fetch(`${apiUrl}/users/loyalty`, {
             headers: { Authorization: `Bearer ${newToken}` },
@@ -137,7 +137,12 @@ export default function CustomerMenu() {
           const retryData = await retry.json();
           if (retryData.success && retryData.result)
             setLoyaltyBalance(retryData.result.balance || 0);
+        } else {
+          setIsAuthOpen(true);
         }
+        return;
+      } else if (res.status === 401) {
+        setIsAuthOpen(true);
         return;
       }
       const data = await res.json();
@@ -171,8 +176,8 @@ export default function CustomerMenu() {
     cartItems.filter((i) => i.menuItemId === id).reduce((s, i) => s + i.quantity, 0);
 
   // Pricing
-  const maxPointsToRedeem = Math.min(loyaltyBalance, Math.floor(cartSubtotal * 10));
-  const pointsDiscount = redeemPointsChecked ? maxPointsToRedeem * 0.1 : 0;
+  const maxPointsToRedeem = Math.min(loyaltyBalance, Math.floor(cartSubtotal));
+  const pointsDiscount = redeemPointsChecked ? maxPointsToRedeem : 0;
   const netAmount = Math.max(0, cartSubtotal - pointsDiscount);
   const taxAmount = netAmount * 0.05;
   const finalAmountToPay = netAmount + taxAmount;
@@ -262,19 +267,47 @@ export default function CustomerMenu() {
   };
 
   const handlePlaceOrderAndPayCounter = async () => {
-    if (!token) { setIsAuthOpen(true); return; }
+    let currentToken = token;
+    if (!currentToken && storeCustomer?.phoneNumber) {
+      currentToken = await silentReauthHelper(storeCustomer.phoneNumber, storeCustomer.name);
+    }
+    if (!currentToken) { setIsAuthOpen(true); return; }
     setIsPlacingOrder(true);
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
       const pointsRedeemed = redeemPointsChecked ? maxPointsToRedeem : 0;
-      const res = await fetch(`${apiUrl}/users/orders`, {
+      let res = await fetch(`${apiUrl}/users/orders`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${currentToken}` },
         body: JSON.stringify({
           items: cartItems.map((i) => ({ menuItemId: i.menuItemId, variantId: i.variantId || null, quantity: i.quantity })),
           pointsRedeemed,
         }),
       });
+
+      if (res.status === 401 && storeCustomer?.phoneNumber) {
+        const newToken = await silentReauthHelper(storeCustomer.phoneNumber, storeCustomer.name);
+        if (newToken) {
+          currentToken = newToken;
+          res = await fetch(`${apiUrl}/users/orders`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${newToken}` },
+            body: JSON.stringify({
+              items: cartItems.map((i) => ({ menuItemId: i.menuItemId, variantId: i.variantId || null, quantity: i.quantity })),
+              pointsRedeemed: 0,
+            }),
+          });
+        } else {
+          setIsPlacingOrder(false);
+          setIsAuthOpen(true);
+          return;
+        }
+      } else if (res.status === 401) {
+        setIsPlacingOrder(false);
+        setIsAuthOpen(true);
+        return;
+      }
+
       const data = await res.json();
       if (data.success && data.result) {
         clearCart();

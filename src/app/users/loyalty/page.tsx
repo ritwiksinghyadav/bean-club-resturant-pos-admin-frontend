@@ -42,13 +42,13 @@ export default function CustomerLoyalty() {
   const [authPhone, setAuthPhone] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
-  const silentReauthHelper = async (phoneNumber: string): Promise<string | null> => {
+  const silentReauthHelper = async (phoneNumber: string, name?: string): Promise<string | null> => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
       const res = await fetch(`${apiUrl}/users/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber }),
+        body: JSON.stringify({ phoneNumber, name }),
       });
 
       if (res.status >= 400 && res.status < 500) {
@@ -84,7 +84,7 @@ export default function CustomerLoyalty() {
       });
 
       if (res.status === 401 && storeCustomer?.phoneNumber) {
-        const newToken = await silentReauthHelper(storeCustomer.phoneNumber);
+        const newToken = await silentReauthHelper(storeCustomer.phoneNumber, storeCustomer.name);
         if (newToken) {
           const retryRes = await fetch(`${apiUrl}/users/loyalty`, {
             headers: {
@@ -96,7 +96,12 @@ export default function CustomerLoyalty() {
             setBalance(retryData.result.balance || 0);
             setLedger(retryData.result.ledger || []);
           }
+        } else {
+          setIsAuthOpen(true);
         }
+        return;
+      } else if (res.status === 401) {
+        setIsAuthOpen(true);
         return;
       }
 
@@ -130,7 +135,7 @@ export default function CustomerLoyalty() {
   useEffect(() => {
     if (!mounted) return;
     if (!storeToken && storeCustomer?.phoneNumber) {
-      silentReauthHelper(storeCustomer.phoneNumber);
+      silentReauthHelper(storeCustomer.phoneNumber, storeCustomer.name);
     }
   }, [mounted, storeToken, storeCustomer]);
 
@@ -281,7 +286,7 @@ export default function CustomerLoyalty() {
                 </div>
                 <div>
                   <p className="text-[10px] text-slate-400 font-semibold">Value Rate</p>
-                  <p className="text-xs font-bold text-emerald-600">₹ 0.10 / pt</p>
+                  <p className="text-xs font-bold text-emerald-600">₹ 1.00 / pt</p>
                 </div>
               </div>
             </div>

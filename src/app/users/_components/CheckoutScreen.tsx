@@ -133,10 +133,10 @@ export default function CheckoutScreen({
                 </div>
               </div>
               <span className="text-xs font-bold text-emerald-600">
-                ₹{(loyaltyBalance * 0.1).toFixed(2)} Value
+                ₹{(loyaltyBalance).toFixed(2)} Value
               </span>
             </div>
-
+ 
             {maxPointsToRedeem > 0 && (
               <label className="flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-2xl cursor-pointer hover:border-red-300 transition-all select-none">
                 <input
@@ -148,7 +148,7 @@ export default function CheckoutScreen({
                 <div className="flex-1">
                   <p className="text-xs font-bold text-slate-800">Redeem loyalty points</p>
                   <p className="text-[10px] text-slate-500 mt-0.5">
-                    Use {maxPointsToRedeem} points to save ₹{(maxPointsToRedeem * 0.1).toFixed(2)}
+                    Use {maxPointsToRedeem} points to save ₹{(maxPointsToRedeem).toFixed(2)}
                   </p>
                 </div>
               </label>

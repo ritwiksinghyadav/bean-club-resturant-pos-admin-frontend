@@ -72,8 +72,32 @@ export const navItems: NavItem[] = [
   {
     title: 'Admins',
     url: '/dashboard/admin',
-    icon: 'user',
+    icon: 'user2',
     shortcut: ['a', 'a'],
+    isActive: false,
+    items: []
+  },
+  {
+    title: 'Users',
+    url: '/dashboard/users',
+    icon: 'user',
+    shortcut: ['u', 'u'],
+    isActive: false,
+    items: []
+  },
+  {
+    title: 'Loyalty Points',
+    url: '/dashboard/loyalty-points',
+    icon: 'userPen',
+    shortcut: ['l', 'p'],
+    isActive: false,
+    items: []
+  },
+  {
+    title: 'Loyalty Settings',
+    url: '/dashboard/loyalty-settings',
+    icon: 'settings',
+    shortcut: ['l', 's'],
     isActive: false,
     items: []
   }

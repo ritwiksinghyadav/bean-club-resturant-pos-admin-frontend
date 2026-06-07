@@ -40,6 +40,7 @@ interface Order {
   totalAmount: string;
   createdAt: string;
   tokenNumber?: string;
+  earnedPoints?: number;
   items: OrderItem[];
 }
 
@@ -60,13 +61,13 @@ export default function CustomerOrders() {
   const [authPhone, setAuthPhone] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
-  const silentReauthHelper = async (phoneNumber: string): Promise<string | null> => {
+  const silentReauthHelper = async (phoneNumber: string, name?: string): Promise<string | null> => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
       const res = await fetch(`${apiUrl}/users/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber }),
+        body: JSON.stringify({ phoneNumber, name }),
       });
 
       if (res.status >= 400 && res.status < 500) {
@@ -102,7 +103,7 @@ export default function CustomerOrders() {
       });
 
       if (res.status === 401 && storeCustomer?.phoneNumber) {
-        const newToken = await silentReauthHelper(storeCustomer.phoneNumber);
+        const newToken = await silentReauthHelper(storeCustomer.phoneNumber, storeCustomer.name);
         if (newToken) {
           const retryRes = await fetch(`${apiUrl}/users/orders`, {
             headers: {
@@ -113,7 +114,12 @@ export default function CustomerOrders() {
           if (retryData.success && retryData.result?.orders) {
             setOrders(retryData.result.orders);
           }
+        } else if (!silent) {
+          setIsAuthOpen(true);
         }
+        return;
+      } else if (res.status === 401 && !silent) {
+        setIsAuthOpen(true);
         return;
       }
 
@@ -146,7 +152,7 @@ export default function CustomerOrders() {
   useEffect(() => {
     if (!mounted) return;
     if (!storeToken && storeCustomer?.phoneNumber) {
-      silentReauthHelper(storeCustomer.phoneNumber);
+      silentReauthHelper(storeCustomer.phoneNumber, storeCustomer.name);
     }
   }, [mounted, storeToken, storeCustomer]);
 
@@ -361,7 +367,7 @@ export default function CustomerOrders() {
                   {/* Total amount & points earned */}
                   <div className="flex justify-between items-center text-xs">
                     <div className="text-slate-500 font-semibold">
-                      Points Earned: <span className="font-bold text-emerald-600">+{Math.floor(parseFloat(order.totalAmount))} pts</span>
+                      Points Earned: <span className="font-bold text-emerald-600">+{order.earnedPoints ?? 0} pts</span>
                     </div>
                     <div className="text-right">
                       <span className="text-slate-400 font-bold text-[10px] mr-1.5">

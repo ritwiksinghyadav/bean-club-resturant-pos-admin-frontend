@@ -66,11 +66,23 @@ export const columns: ColumnDef<Order>[] = [
   {
     accessorKey: 'totalAmount',
     header: 'TOTAL',
-    cell: ({ row }) => (
-      <span className="text-sm font-black text-foreground">
-        ₹{parseFloat(row.original.totalAmount).toFixed(2)}
-      </span>
-    )
+    cell: ({ row }) => {
+      const amt = parseFloat(row.original.totalAmount);
+      const isPending = row.original.status === 'pending';
+      const isPointsOnly = amt === 0 && (row.original.pointsRedeemed ?? 0) > 0;
+      return (
+        <div className="flex flex-col">
+          <span className="text-sm font-black text-foreground">
+            ₹{amt.toFixed(2)}
+          </span>
+          {isPointsOnly && isPending && (
+            <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/50 rounded px-1.5 py-0.5 mt-1 self-start whitespace-nowrap">
+              Paid with Points
+            </span>
+          )}
+        </div>
+      );
+    }
   },
   {
     accessorKey: 'status',

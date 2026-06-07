@@ -43,6 +43,7 @@ export interface Order {
   createdAt: string;
   discount?: string;
   pointsRedeemed?: number;
+  earnedPoints?: number;
   user: { name: string; phoneNumber: string };
   items: OrderItem[];
 }
@@ -150,6 +151,14 @@ function OrderDetailDrawer({
                 </div>
               </div>
 
+              {/* Fully Paid with Points Warning/Notice */}
+              {parseFloat(order.totalAmount) === 0 && order.status === 'pending' && (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-3 text-xs font-bold text-center flex items-center justify-center gap-2 shadow-sm animate-pulse">
+                  <Coins className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Fully Paid with Points (Cashier Approval Pending)</span>
+                </div>
+              )}
+
               {/* Items */}
               <div className="rounded-xl border bg-muted/20 p-4 space-y-3">
                 <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -192,12 +201,12 @@ function OrderDetailDrawer({
                 ) : (
                   <p className="text-xs text-muted-foreground">No loyalty points or promo applied.</p>
                 )}
-                {(order.status === 'approved' || order.status === 'completed') && (
+                 {['approved', 'preparing', 'completed'].includes(order.status) && (
                   <div className="flex justify-between items-center text-sm border-t pt-2 mt-1">
                     <span className="text-muted-foreground font-medium flex items-center gap-1.5">
                       <Coins className="w-3.5 h-3.5 text-green-500" /> Points Earned
                     </span>
-                    <span className="font-bold text-green-700">+{Math.floor(parseFloat(order.totalAmount))} pts</span>
+                    <span className="font-bold text-green-700">+{order.earnedPoints ?? 0} pts</span>
                   </div>
                 )}
               </div>
