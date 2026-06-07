@@ -23,6 +23,20 @@ import {
   CreditCard
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } }
+};
 
 interface Variant {
   id: string;
@@ -76,11 +90,50 @@ export default function CustomerMenu() {
   const [token, setToken] = useState<string | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
 
+  const silentReauthHelper = async (phoneNumber: string): Promise<string | null> => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const res = await fetch(`${apiUrl}/users/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber }),
+      });
+
+      if (res.status >= 400 && res.status < 500) {
+        setAuth(null, null);
+        setToken(null);
+        setCustomer(null);
+        return null;
+      }
+
+      const data = await res.json();
+      if (data.success && data.result) {
+        const { accessToken, user } = data.result;
+        setAuth(accessToken, user);
+        setToken(accessToken);
+        setCustomer(user);
+        return accessToken;
+      }
+      return null;
+    } catch (err) {
+      console.error('Silent reauth helper network/server error:', err);
+      return null;
+    }
+  };
+
   // Sync store auth with client states after mounting to avoid Next.js hydration mismatch
   useEffect(() => {
     if (mounted) {
       setToken(storeToken);
       setCustomer(storeCustomer);
+    }
+  }, [mounted, storeToken, storeCustomer]);
+
+  // Silent re-authentication check on mount
+  useEffect(() => {
+    if (!mounted) return;
+    if (!storeToken && storeCustomer?.phoneNumber) {
+      silentReauthHelper(storeCustomer.phoneNumber);
     }
   }, [mounted, storeToken, storeCustomer]);
 
@@ -135,6 +188,24 @@ export default function CustomerMenu() {
           'Authorization': `Bearer ${authToken}`
         }
       });
+
+      if (res.status === 401 && storeCustomer?.phoneNumber) {
+        // Token expired, try silent reauth and retry
+        const newToken = await silentReauthHelper(storeCustomer.phoneNumber);
+        if (newToken) {
+          const retryRes = await fetch(`${apiUrl}/users/loyalty`, {
+            headers: {
+              'Authorization': `Bearer ${newToken}`
+            }
+          });
+          const retryData = await retryRes.json();
+          if (retryData.success && retryData.result) {
+            setLoyaltyBalance(retryData.result.balance || 0);
+          }
+        }
+        return;
+      }
+
       const data = await res.json();
       if (data.success && data.result) {
         setLoyaltyBalance(data.result.balance || 0);
@@ -331,9 +402,16 @@ export default function CustomerMenu() {
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 pb-24 font-sans text-slate-900">
-      
-      {currentScreen === 'menu' && (
-        <>
+      <AnimatePresence mode="wait">
+        {currentScreen === 'menu' && (
+          <motion.div 
+            key="menu"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="flex flex-col flex-1 w-full"
+          >
           {/* Header */}
           <header className="px-4 py-3 bg-white shadow-sm flex justify-between items-center sticky top-0 z-30">
             <div className="flex items-center gap-2 text-red-600">
@@ -415,101 +493,124 @@ export default function CustomerMenu() {
                 <p className="text-sm mt-1">Try a different search term or category.</p>
               </div>
             ) : (
-              filteredItems.map((item) => {
-                const qty = getItemQuantity(item.id);
-                return (
-                  <div
-                    key={item.id}
-                    className="bg-white rounded-2xl p-4 pb-6 flex gap-4 shadow-sm border border-gray-100 relative"
-                  >
-                    {/* Item Details */}
-                    <div className="flex-1 flex flex-col justify-between pr-2">
-                      <div>
-                        {item.tags?.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
-                            {item.tags.map((t, idx) => (
-                              <span key={idx} className="text-[10px] uppercase tracking-wider font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded flex items-center border border-red-100">
-                                {idx === 0 && <span className="w-1.5 h-1.5 bg-red-500 rounded-full mr-1.5 animate-pulse"></span>}
-                                {t.tag.name}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <h3 className="text-base font-bold text-slate-800 leading-tight mb-1">{item.name}</h3>
-                        <span className="text-sm font-semibold text-slate-700 block mb-1.5">${parseFloat(item.basePrice).toFixed(2)}</span>
-                        <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{item.description}</p>
+              <motion.div 
+                variants={containerVariants}
+                initial="hidden"
+                animate="show"
+                className="space-y-4"
+              >
+                {filteredItems.map((item) => {
+                  const qty = getItemQuantity(item.id);
+                  return (
+                    <motion.div
+                      variants={itemVariants}
+                      key={item.id}
+                      className="bg-white rounded-2xl p-4 pb-6 flex gap-4 shadow-sm border border-gray-100 relative"
+                    >
+                      {/* Item Details */}
+                      <div className="flex-1 flex flex-col justify-between pr-2">
+                        <div>
+                          {item.tags?.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                              {item.tags.map((t, idx) => (
+                                <span key={idx} className="text-[10px] uppercase tracking-wider font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded flex items-center border border-red-100">
+                                  {idx === 0 && <span className="w-1.5 h-1.5 bg-red-500 rounded-full mr-1.5 animate-pulse"></span>}
+                                  {t.tag.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <h3 className="text-base font-bold text-slate-800 leading-tight mb-1">{item.name}</h3>
+                          <span className="text-sm font-semibold text-slate-700 block mb-1.5">${parseFloat(item.basePrice).toFixed(2)}</span>
+                          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{item.description}</p>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Item Image & Controls */}
-                    <div className="w-[110px] flex flex-col items-center">
-                      <div className="w-[110px] h-[110px] rounded-xl bg-slate-100 overflow-hidden relative shadow-inner mb-[-18px] border border-gray-100">
-                        {item.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50">
-                            <Utensils className="w-8 h-8" />
-                          </div>
+                      {/* Item Image & Controls */}
+                      <div className="w-[110px] flex flex-col items-center">
+                        <div className="w-[110px] h-[110px] rounded-xl bg-slate-100 overflow-hidden relative shadow-inner mb-[-18px] border border-gray-100">
+                          {item.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50">
+                              <Utensils className="w-8 h-8" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Inline Quantity Controls */}
+                        <div className="relative z-10 w-[90px]">
+                          {qty === 0 ? (
+                            <button
+                              onClick={() => handlePlusClick(item)}
+                              className="w-full bg-white text-red-600 font-extrabold text-sm py-1.5 rounded-lg border shadow-sm border-gray-200 hover:bg-gray-50 hover:shadow uppercase transition-all flex items-center justify-center gap-1"
+                            >
+                              ADD
+                            </button>
+                          ) : (
+                            <div className="w-full bg-red-50 text-red-600 font-bold text-sm rounded-lg border border-red-200 shadow-sm flex items-center justify-between overflow-hidden">
+                              <button onClick={() => handleMinusClick(item)} className="p-1.5 hover:bg-red-100 active:bg-red-200 transition-colors px-2">
+                                <Minus className="w-4 h-4" />
+                              </button>
+                              <span className="flex-1 text-center bg-transparent pointer-events-none">{qty}</span>
+                              <button onClick={() => handlePlusClick(item)} className="p-1.5 hover:bg-red-100 active:bg-red-200 transition-colors px-2">
+                                <Plus className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        {item.variants && item.variants.length > 0 && (
+                          <span className="text-[9px] text-slate-500 font-medium mt-1">Customizable</span>
                         )}
                       </div>
-                      
-                      {/* Inline Quantity Controls */}
-                      <div className="relative z-10 w-[90px]">
-                        {qty === 0 ? (
-                          <button
-                            onClick={() => handlePlusClick(item)}
-                            className="w-full bg-white text-red-600 font-extrabold text-sm py-1.5 rounded-lg border shadow-sm border-gray-200 hover:bg-gray-50 hover:shadow uppercase transition-all flex items-center justify-center gap-1"
-                          >
-                            ADD
-                          </button>
-                        ) : (
-                          <div className="w-full bg-red-50 text-red-600 font-bold text-sm rounded-lg border border-red-200 shadow-sm flex items-center justify-between overflow-hidden">
-                            <button onClick={() => handleMinusClick(item)} className="p-1.5 hover:bg-red-100 active:bg-red-200 transition-colors px-2">
-                              <Minus className="w-4 h-4" />
-                            </button>
-                            <span className="flex-1 text-center bg-transparent pointer-events-none">{qty}</span>
-                            <button onClick={() => handlePlusClick(item)} className="p-1.5 hover:bg-red-100 active:bg-red-200 transition-colors px-2">
-                              <Plus className="w-4 h-4" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                      {item.variants && item.variants.length > 0 && (
-                        <span className="text-[9px] text-slate-500 font-medium mt-1">Customizable</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
             )}
           </div>
 
           {/* Floating Checkout Bar */}
-          {cartItemCount > 0 && !isCartOpen && (
-            <div className="fixed bottom-24 left-4 right-4 z-40 max-w-2xl mx-auto animate-in slide-in-from-bottom-5 duration-300">
-              <button
-                onClick={() => setIsCartOpen(true)}
-                className="w-full bg-red-600 shadow-xl shadow-red-600/40 text-white p-4 rounded-2xl flex items-center justify-between transition-all active:scale-95 border border-red-500"
+          <AnimatePresence>
+            {cartItemCount > 0 && !isCartOpen && (
+              <motion.div
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 100, opacity: 0 }}
+                transition={{ type: 'spring', bounce: 0.4, duration: 0.6 }}
+                className="fixed bottom-24 left-4 right-4 z-40 max-w-2xl mx-auto"
               >
-                <div className="flex flex-col items-start">
-                  <span className="font-extrabold text-sm tracking-wide">{cartItemCount} item{cartItemCount > 1 ? 's' : ''} added</span>
-                  <span className="font-bold text-xs text-red-100 mt-0.5">Subtotal: ${cartSubtotal.toFixed(2)}</span>
-                </div>
-                
-                <div className="flex items-center gap-2 font-black text-base tracking-wide bg-white/20 px-4 py-2 rounded-xl">
-                  Next
-                  <ArrowRight className="w-5 h-5" />
-                </div>
-              </button>
-            </div>
-          )}
-        </>
-      )}
+                <button
+                  onClick={() => setIsCartOpen(true)}
+                  className="w-full bg-red-600 shadow-xl shadow-red-600/40 text-white p-4 rounded-2xl flex items-center justify-between transition-all active:scale-95 border border-red-500"
+                >
+                  <div className="flex flex-col items-start">
+                    <span className="font-extrabold text-sm tracking-wide">{cartItemCount} item{cartItemCount > 1 ? 's' : ''} added</span>
+                    <span className="font-bold text-xs text-red-100 mt-0.5">Subtotal: ${cartSubtotal.toFixed(2)}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 font-black text-base tracking-wide bg-white/20 px-4 py-2 rounded-xl">
+                    Next
+                    <ArrowRight className="w-5 h-5" />
+                  </div>
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          </motion.div>
+        )}
 
-      {/* Checkout Summary Screen */}
-      {currentScreen === 'checkout' && (
-        <div className="flex-1 px-4 py-6 max-w-md mx-auto w-full space-y-6">
+        {/* Checkout Summary Screen */}
+        {currentScreen === 'checkout' && (
+          <motion.div 
+            key="checkout"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="flex-1 px-4 py-6 max-w-md mx-auto w-full space-y-6"
+          >
           {/* Header */}
           <div className="flex items-center gap-3">
             <button
@@ -669,12 +770,19 @@ export default function CustomerMenu() {
               </>
             )}
           </button>
-        </div>
-      )}
+          </motion.div>
+        )}
 
-      {/* Bill & Token Receipt Screen */}
-      {currentScreen === 'success' && createdOrderDetails && (
-        <div className="flex-1 px-4 py-8 max-w-sm mx-auto w-full text-center space-y-6">
+        {/* Bill & Token Receipt Screen */}
+        {currentScreen === 'success' && createdOrderDetails && (
+          <motion.div 
+            key="success"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.4 }}
+            className="flex-1 px-4 py-8 max-w-sm mx-auto w-full text-center space-y-6"
+          >
           <div className="flex justify-center">
             <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center border border-green-200 shadow-inner">
               <Check className="w-10 h-10 text-green-500" />
@@ -733,13 +841,26 @@ export default function CustomerMenu() {
           >
             Track Order Status
           </button>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Cart Bottom Drawer */}
-      {isCartOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4 pb-safe">
-          <div className="w-full sm:max-w-md bg-slate-50 sm:rounded-3xl rounded-t-3xl flex flex-col max-h-[85vh] shadow-2xl animate-in slide-in-from-bottom-full duration-200">
+      <AnimatePresence>
+        {isCartOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4 pb-safe"
+          >
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="w-full sm:max-w-md bg-slate-50 sm:rounded-3xl rounded-t-3xl flex flex-col max-h-[85vh] shadow-2xl"
+            >
             {/* Header */}
             <div className="p-4 bg-white border-b flex justify-between items-center sm:rounded-t-3xl rounded-t-3xl shrink-0">
               <h3 className="text-xl font-black text-slate-800">Your Cart</h3>
@@ -822,9 +943,10 @@ export default function CustomerMenu() {
                 </button>
               </div>
             )}
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Profile Confirmation Popup */}
       {showProfileConfirm && (

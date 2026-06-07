@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Coffee, Receipt, Award, ShoppingBag } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from './cart-store';
 
 export default function UsersLayout({
@@ -32,14 +33,17 @@ export default function UsersLayout({
       {/* Mobile-first frame container */}
       <div className="w-full max-w-md bg-white border-x border-slate-200 flex flex-col relative overflow-hidden shadow-xl h-full">
         
-        {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden pb-40 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {children}
         </main>
 
-        {/* Bottom Nav Bar */}
         {mounted && customer && (
-          <nav className="absolute bottom-0 left-0 right-0 h-20 bg-white/95 backdrop-blur-lg border-t border-slate-200 flex justify-around items-center px-4 z-40">
+          <motion.nav 
+            initial={{ y: 100 }}
+            animate={{ y: 0 }}
+            transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+            className="absolute bottom-0 left-0 right-0 h-20 bg-white/95 backdrop-blur-lg border-t border-slate-200 flex justify-around items-center px-4 z-40"
+          >
             <Link
               href="/users"
               className={`flex flex-col items-center justify-center w-16 h-16 rounded-2xl transition-all duration-300 ${
@@ -75,7 +79,7 @@ export default function UsersLayout({
               <Award className="w-5 h-5 mb-1" />
               <span className="text-[10px] tracking-wide">Rewards</span>
             </Link>
-          </nav>
+          </motion.nav>
         )}
       </div>
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useCartStore } from '../cart-store';
 import { 
   Receipt, 
@@ -43,9 +44,12 @@ interface Order {
 }
 
 export default function CustomerOrders() {
-  const token = useCartStore((state) => state.token);
+  const storeToken = useCartStore((state) => state.token);
+  const storeCustomer = useCartStore((state) => state.customer);
   const setAuth = useCartStore((state) => state.setAuth);
   
+  const [token, setToken] = useState<string | null>(null);
+  const [customer, setCustomer] = useState<any | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -56,6 +60,37 @@ export default function CustomerOrders() {
   const [authPhone, setAuthPhone] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
+  const silentReauthHelper = async (phoneNumber: string): Promise<string | null> => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const res = await fetch(`${apiUrl}/users/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber }),
+      });
+
+      if (res.status >= 400 && res.status < 500) {
+        setAuth(null, null);
+        setToken(null);
+        setCustomer(null);
+        return null;
+      }
+
+      const data = await res.json();
+      if (data.success && data.result) {
+        const { accessToken, user } = data.result;
+        setAuth(accessToken, user);
+        setToken(accessToken);
+        setCustomer(user);
+        return accessToken;
+      }
+      return null;
+    } catch (err) {
+      console.error('Silent reauth helper network/server error:', err);
+      return null;
+    }
+  };
+
   const fetchOrders = async (authToken: string, silent = false) => {
     if (!silent) setLoading(true);
     try {
@@ -65,6 +100,23 @@ export default function CustomerOrders() {
           'Authorization': `Bearer ${authToken}`
         }
       });
+
+      if (res.status === 401 && storeCustomer?.phoneNumber) {
+        const newToken = await silentReauthHelper(storeCustomer.phoneNumber);
+        if (newToken) {
+          const retryRes = await fetch(`${apiUrl}/users/orders`, {
+            headers: {
+              'Authorization': `Bearer ${newToken}`
+            }
+          });
+          const retryData = await retryRes.json();
+          if (retryData.success && retryData.result?.orders) {
+            setOrders(retryData.result.orders);
+          }
+        }
+        return;
+      }
+
       const data = await res.json();
       if (data.success && data.result?.orders) {
         setOrders(data.result.orders);
@@ -81,7 +133,25 @@ export default function CustomerOrders() {
 
   useEffect(() => {
     setMounted(true);
-    if (!token) return;
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      setToken(storeToken);
+      setCustomer(storeCustomer);
+    }
+  }, [mounted, storeToken, storeCustomer]);
+
+  // Silent re-authentication check on mount
+  useEffect(() => {
+    if (!mounted) return;
+    if (!storeToken && storeCustomer?.phoneNumber) {
+      silentReauthHelper(storeCustomer.phoneNumber);
+    }
+  }, [mounted, storeToken, storeCustomer]);
+
+  useEffect(() => {
+    if (!mounted || !token) return;
 
     fetchOrders(token);
 
@@ -91,7 +161,7 @@ export default function CustomerOrders() {
     }, 8000);
 
     return () => clearInterval(interval);
-  }, [token]);
+  }, [token, mounted]);
 
   if (!mounted) return null;
 
@@ -181,23 +251,23 @@ export default function CustomerOrders() {
       {/* Main Panel */}
       <div className="flex-1 px-4 py-4 max-w-2xl mx-auto w-full">
         {!token ? (
-          /* Login Screen for Guests */
+          /* Place Order First CTA Screen */
           <div className="flex flex-col items-center justify-center py-20 text-center space-y-6 bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
             <div className="w-16 h-16 rounded-3xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600 shadow-sm">
               <Lock className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-800">Verification Required</h3>
+              <h3 className="text-base font-bold text-slate-800">You need to place an order first</h3>
               <p className="text-xs text-slate-500 mt-2 max-w-[250px] mx-auto leading-relaxed">
-                Log in with your name and phone number to see your order history and earned loyalty points.
+                You need to place an order first to register your profile and see order logs/loyalty points.
               </p>
             </div>
-            <button
-              onClick={() => setIsAuthOpen(true)}
-              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-red-600/10 active:scale-95"
+            <Link
+              href="/users"
+              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-red-600/10 active:scale-95 flex items-center justify-center gap-1.5"
             >
-              Verify Customer Identity
-            </button>
+              Browse Menu & Order
+            </Link>
           </div>
         ) : loading && orders.length === 0 ? (
           /* Loading States */
