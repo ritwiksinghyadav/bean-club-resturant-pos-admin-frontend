@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useCartStore } from '../cart-store';
-import { 
-  Award, 
-  Loader2, 
+import {
+  Award,
+  Loader2,
   Lock,
   User,
   Phone,
@@ -28,7 +28,7 @@ export default function CustomerLoyalty() {
   const storeToken = useCartStore((state) => state.token);
   const storeCustomer = useCartStore((state) => state.customer);
   const setAuth = useCartStore((state) => state.setAuth);
-  
+
   const [token, setToken] = useState<string | null>(null);
   const [customer, setCustomer] = useState<any | null>(null);
   const [balance, setBalance] = useState<number>(0);
@@ -198,6 +198,16 @@ export default function CustomerLoyalty() {
           <Award className="w-5 h-5" />
           <h1 className="text-xl font-black tracking-tight">Bean Club Rewards</h1>
         </div>
+        {token && (
+          <button
+            onClick={() => fetchLoyalty(token)}
+            disabled={loading}
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-red-600 bg-slate-100 hover:bg-red-50 px-3 py-1.5 rounded-xl transition-all"
+          >
+            <Loader2 className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        )}
       </header>
 
       {/* Main Panel */}
@@ -262,7 +272,7 @@ export default function CustomerLoyalty() {
                 </div>
                 <div>
                   <p className="text-[10px] text-slate-400 font-semibold">Earn Rate</p>
-                  <p className="text-xs font-bold text-slate-700">1 pt / $1</p>
+                  <p className="text-xs font-bold text-slate-700">1 pt / ₹1</p>
                 </div>
               </div>
               <div className="bg-white border border-gray-100 shadow-sm rounded-3xl p-4 flex items-center gap-3">
@@ -271,7 +281,7 @@ export default function CustomerLoyalty() {
                 </div>
                 <div>
                   <p className="text-[10px] text-slate-400 font-semibold">Value Rate</p>
-                  <p className="text-xs font-bold text-emerald-600">$0.10 / pt</p>
+                  <p className="text-xs font-bold text-emerald-600">₹ 0.10 / pt</p>
                 </div>
               </div>
             </div>

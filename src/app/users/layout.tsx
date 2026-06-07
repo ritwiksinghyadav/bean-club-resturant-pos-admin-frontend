@@ -33,7 +33,7 @@ export default function UsersLayout({
       {/* Mobile-first frame container */}
       <div className="w-full max-w-md bg-white border-x border-slate-200 flex flex-col relative overflow-hidden shadow-xl h-full">
         
-        <main className="flex-1 overflow-y-auto overflow-x-hidden pb-40 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden pb-24 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {children}
         </main>
 
