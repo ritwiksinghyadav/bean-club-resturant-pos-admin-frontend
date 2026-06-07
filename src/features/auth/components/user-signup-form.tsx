@@ -20,7 +20,7 @@ const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
   email: z.string().email({ message: 'Enter a valid email address' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
-  phoneNumber: z.string().optional(),
+  phoneNumber: z.string().min(5, { message: 'Phone number must be at least 5 characters' }),
   bio: z.string().optional()
 });
 
@@ -145,7 +145,7 @@ export default function UserSignUpForm() {
             name='phoneNumber'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Phone Number (Optional)</FormLabel>
+                <FormLabel>Phone Number</FormLabel>
                 <FormControl>
                   <Input
                     type='text'
