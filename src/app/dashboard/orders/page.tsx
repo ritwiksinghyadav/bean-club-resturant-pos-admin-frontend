@@ -4,11 +4,12 @@ import OrderClient from '@/features/orders/components/order-client';
 
 export const metadata = { title: 'Dashboard: Orders' };
 
-export default async function Page({
-  searchParams
-}: {
-  searchParams: { [key: string]: string | string[] | undefined };
+type SearchParams = { [key: string]: string | string[] | undefined };
+
+export default async function Page(props: {
+  searchParams: Promise<SearchParams>;
 }) {
+  const searchParams = await props.searchParams;
   const session = await auth();
   const token = (session?.user as any)?.accessToken;
 
