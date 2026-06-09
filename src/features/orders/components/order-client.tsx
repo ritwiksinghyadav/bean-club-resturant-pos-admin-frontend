@@ -17,6 +17,7 @@ import {
   Eye,
   Coins,
   Tag,
+  Gift,
   Package,
   ChevronRight,
 } from 'lucide-react';
@@ -42,8 +43,13 @@ export interface Order {
   tokenNumber: string;
   createdAt: string;
   discount?: string;
+  offerDiscount?: string;
   pointsRedeemed?: number;
   earnedPoints?: number;
+  offer?: {
+    code: string;
+    description: string;
+  } | null;
   user: { name: string; phoneNumber: string };
   items: OrderItem[];
 }
@@ -191,12 +197,28 @@ function OrderDetailDrawer({
                 <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                   <Coins className="w-3.5 h-3.5" /> Points &amp; Offers
                 </p>
-                {(order.pointsRedeemed ?? 0) > 0 ? (
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                      <Tag className="w-3.5 h-3.5 text-amber-500" /> Points Redeemed
-                    </span>
-                    <span className="font-bold text-amber-700">{order.pointsRedeemed} pts (−₹{parseFloat(order.discount ?? '0').toFixed(2)})</span>
+                {((order.pointsRedeemed ?? 0) > 0 || order.offer) ? (
+                  <div className="space-y-2">
+                    {order.offer && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                          <Gift className="w-3.5 h-3.5 text-red-500" /> Offer Applied
+                        </span>
+                        <span className="font-bold text-red-600">
+                          {order.offer.code}
+                        </span>
+                      </div>
+                    )}
+                    {(order.pointsRedeemed ?? 0) > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                          <Tag className="w-3.5 h-3.5 text-amber-500" /> Points Redeemed
+                        </span>
+                        <span className="font-bold text-amber-700">
+                          {order.pointsRedeemed} pts (−₹{parseFloat(order.pointsRedeemed?.toString() || '0').toFixed(2)})
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p className="text-xs text-muted-foreground">No loyalty points or promo applied.</p>
@@ -220,10 +242,16 @@ function OrderDetailDrawer({
                     ₹{order.items.reduce((s, i) => s + parseFloat(i.price) * i.quantity, 0).toFixed(2)}
                   </span>
                 </div>
-                {parseFloat(order.discount ?? '0') > 0 && (
+                {parseFloat(order.offerDiscount ?? '0') > 0 && (
+                  <div className="flex justify-between text-sm text-emerald-600">
+                    <span>Offer Discount ({order.offer?.code})</span>
+                    <span className="font-bold">−₹{parseFloat(order.offerDiscount ?? '0').toFixed(2)}</span>
+                  </div>
+                )}
+                {(order.pointsRedeemed ?? 0) > 0 && (
                   <div className="flex justify-between text-sm text-emerald-600">
                     <span>Loyalty Discount</span>
-                    <span className="font-bold">−₹{parseFloat(order.discount ?? '0').toFixed(2)}</span>
+                    <span className="font-bold">−₹{parseFloat((order.pointsRedeemed ?? 0).toString()).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-base font-black border-t pt-2 mt-1 text-foreground">

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, Gift, Coins, Loader2, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CartItem } from '../cart-store';
@@ -22,6 +22,13 @@ interface CheckoutScreenProps {
   onAddEditItems: () => void;
   onRedeemChange: (checked: boolean) => void;
   onPlaceOrder: () => void;
+  
+  // Offers props
+  offers: any[];
+  appliedOfferCode: string | null;
+  offerDiscount: number;
+  onApplyOffer: (code: string) => Promise<void>;
+  onRemoveOffer: () => void;
 }
 
 export default function CheckoutScreen({
@@ -40,7 +47,17 @@ export default function CheckoutScreen({
   onAddEditItems,
   onRedeemChange,
   onPlaceOrder,
+  
+  offers,
+  appliedOfferCode,
+  offerDiscount,
+  onApplyOffer,
+  onRemoveOffer,
 }: CheckoutScreenProps) {
+  const [promoInput, setPromoInput] = useState('');
+  const [loadingOffer, setLoadingOffer] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   return (
     <motion.div
       key="checkout"
@@ -115,10 +132,123 @@ export default function CheckoutScreen({
         </div>
       </div>
 
-      {/* Loyalty Points Section */}
+      {/* Offers & Promo Codes */}
       <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
         <div className="flex items-center gap-2 text-red-600">
           <Gift className="w-5 h-5" />
+          <h3 className="text-sm font-bold">Offers &amp; Promo Codes</h3>
+        </div>
+        
+        {!appliedOfferCode ? (
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Enter promo code (e.g. WELCOME50)"
+                className="flex-1 px-4 py-2 border rounded-xl text-xs outline-none focus:border-red-500 font-semibold uppercase placeholder:normal-case"
+                value={promoInput}
+                onChange={(e) => {
+                  setPromoInput(e.target.value);
+                  setErrorMsg(null);
+                }}
+              />
+              <button
+                onClick={async () => {
+                  if (promoInput.trim()) {
+                    setLoadingOffer(true);
+                    setErrorMsg(null);
+                    try {
+                      await onApplyOffer(promoInput.trim().toUpperCase());
+                    } catch (err: any) {
+                      setErrorMsg(err.message || 'Invalid coupon');
+                    } finally {
+                      setLoadingOffer(false);
+                    }
+                  }
+                }}
+                disabled={loadingOffer || !promoInput.trim()}
+                className="px-4 py-2 bg-red-600 text-white text-xs font-bold rounded-xl active:scale-95 transition-all disabled:opacity-50"
+              >
+                {loadingOffer ? 'Applying...' : 'Apply'}
+              </button>
+            </div>
+            {errorMsg && (
+              <p className="text-[10px] text-rose-500 font-semibold">{errorMsg}</p>
+            )}
+            
+            {offers.length > 0 && (
+              <div className="space-y-2 pt-2">
+                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Available Coupons</p>
+                <div className="max-h-40 overflow-y-auto space-y-2 pr-1 no-scrollbar">
+                  {offers.map((offer) => {
+                    const minBill = parseFloat(offer.minBillAmount);
+                    const isEligible = cartSubtotal >= minBill;
+                    return (
+                      <div
+                        key={offer.id}
+                        onClick={async () => {
+                          if (isEligible) {
+                            setLoadingOffer(true);
+                            setErrorMsg(null);
+                            try {
+                              await onApplyOffer(offer.code);
+                            } catch (err: any) {
+                              setErrorMsg(err.message);
+                            } finally {
+                              setLoadingOffer(false);
+                            }
+                          }
+                        }}
+                        className={`p-3 border rounded-2xl flex justify-between items-center text-xs transition-all ${
+                          isEligible 
+                            ? 'bg-slate-50/50 border-gray-200 cursor-pointer hover:border-red-200 hover:bg-red-50/10' 
+                            : 'bg-slate-100/30 border-gray-100 opacity-60 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-extrabold text-red-600 uppercase">#{offer.code}</span>
+                          <span className="text-[10px] text-slate-600 font-medium">{offer.description}</span>
+                          {!isEligible && (
+                            <span className="text-[9px] text-rose-500 font-bold mt-0.5">Add ₹{(minBill - cartSubtotal).toFixed(2)} more to unlock</span>
+                          )}
+                        </div>
+                        {isEligible && (
+                          <span className="text-[10px] font-bold text-red-600 shrink-0 bg-red-50 px-2 py-1 rounded-lg border border-red-100">Apply</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-xs animate-in zoom-in-95 duration-150">
+            <div className="flex flex-col gap-0.5">
+              <span className="font-black text-emerald-800 flex items-center gap-1">
+                Coupon #{appliedOfferCode} Applied
+              </span>
+              <span className="text-[10px] text-emerald-700 font-semibold">
+                Saved ₹{offerDiscount.toFixed(2)} on this order
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setPromoInput('');
+                onRemoveOffer();
+              }}
+              className="px-3 py-1.5 bg-white border border-emerald-200 text-rose-600 rounded-xl font-bold active:scale-95 transition-all shadow-sm hover:bg-rose-50 hover:border-rose-200"
+            >
+              Remove
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Loyalty Points Section */}
+      <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
+        <div className="flex items-center gap-2 text-red-600">
+          <Coins className="w-5 h-5" />
           <h3 className="text-sm font-bold">Loyalty Points Rewards</h3>
         </div>
 
@@ -161,32 +291,18 @@ export default function CheckoutScreen({
         )}
       </div>
 
-      {/* Offers & Promo Codes */}
-      <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
-        <div className="flex items-center gap-2 text-red-600">
-          <Gift className="w-5 h-5" />
-          <h3 className="text-sm font-bold">Offers &amp; Promo Codes</h3>
-        </div>
-        <div className="p-4 bg-slate-50 border border-slate-200 border-dashed rounded-2xl flex items-center justify-between text-xs">
-          <div className="flex flex-col gap-0.5">
-            <span className="font-bold text-slate-700">No active promo codes applied</span>
-            <span className="text-[10px] text-slate-500">Apply coupon in future updates</span>
-          </div>
-          <button
-            disabled
-            className="px-3 py-1.5 bg-slate-200 text-slate-400 rounded-lg font-bold cursor-not-allowed"
-          >
-            Apply
-          </button>
-        </div>
-      </div>
-
       {/* Pricing Calculations */}
       <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-3">
         <div className="flex justify-between text-sm font-semibold text-slate-600">
           <span>Order Subtotal</span>
           <span className="font-bold text-slate-800">₹{cartSubtotal.toFixed(2)}</span>
         </div>
+        {appliedOfferCode && offerDiscount > 0 && (
+          <div className="flex justify-between text-sm text-emerald-600 font-bold">
+            <span>Offer Discount ({appliedOfferCode})</span>
+            <span>-₹{offerDiscount.toFixed(2)}</span>
+          </div>
+        )}
         {redeemPointsChecked && maxPointsToRedeem > 0 && (
           <div className="flex justify-between text-sm text-emerald-600 font-bold">
             <span>Loyalty Points Discount</span>

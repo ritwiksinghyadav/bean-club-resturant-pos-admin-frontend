@@ -61,6 +61,14 @@ export const navItems: NavItem[] = [
     isActive: false,
     items: []
   },
+  {
+    title: 'Offers',
+    url: '/dashboard/offers',
+    icon: 'gift',
+    shortcut: ['f', 'f'],
+    isActive: false,
+    items: []
+  },
   // {
   //   title: 'Kanban',
   //   url: '/dashboard/kanban',

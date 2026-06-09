@@ -33,7 +33,8 @@ import {
   IconBrandGithub,
   IconList,
   IconTag,
-  IconLayersDifference
+  IconLayersDifference,
+  IconGift
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -72,5 +73,6 @@ export const Icons = {
   check: IconCheck,
   category: IconList,
   tag: IconTag,
-  variants: IconLayersDifference
+  variants: IconLayersDifference,
+  gift: IconGift
 };

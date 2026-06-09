@@ -26,7 +26,7 @@ export default function MenuCard({ item, qty, onPlus, onMinus }: MenuCardProps) 
   return (
     <motion.div
       variants={itemVariants}
-      className="bg-white rounded-2xl p-4 pb-6 flex gap-4 shadow-sm border border-gray-100 relative"
+      className="bg-white rounded-2xl p-4 flex gap-4 shadow-sm border border-gray-100 relative"
     >
       {/* Item Details */}
       <div className="flex-1 flex flex-col justify-between pr-2">
@@ -48,15 +48,19 @@ export default function MenuCard({ item, qty, onPlus, onMinus }: MenuCardProps) 
           )}
           <h3 className="text-base font-bold text-slate-800 leading-tight mb-1">{item.name}</h3>
           <span className="text-sm font-semibold text-slate-700 block mb-1.5">
-            ₹{parseFloat(item.basePrice).toFixed(2)}
+            {item.variants && item.variants.length > 0
+              ? `₹${Math.min(...item.variants.map((v) => parseFloat(v.price))).toFixed(2)}`
+              : `₹${parseFloat(item.basePrice).toFixed(2)}`}
           </span>
-          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{item.description}</p>
+          {item.description && item.description.trim() !== '' && (
+            <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{item.description}</p>
+          )}
         </div>
       </div>
 
       {/* Item Image & Controls */}
-      <div className="w-[110px] flex flex-col items-center">
-        <div className="w-[110px] h-[110px] rounded-xl bg-slate-100 overflow-hidden relative shadow-inner mb-[-18px] border border-gray-100">
+      <div className="w-[100px] flex flex-col items-center shrink-0">
+        <div className="w-[100px] h-[100px] rounded-xl bg-slate-100 overflow-hidden relative shadow-inner mb-[-16px] border border-gray-100">
           {item.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />

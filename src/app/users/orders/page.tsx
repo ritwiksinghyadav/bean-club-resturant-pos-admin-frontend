@@ -41,6 +41,13 @@ interface Order {
   createdAt: string;
   tokenNumber?: string;
   earnedPoints?: number;
+  discount: string;
+  offerDiscount: string;
+  pointsRedeemed: number;
+  offer?: {
+    code: string;
+    description: string;
+  } | null;
   items: OrderItem[];
 }
 
@@ -236,7 +243,7 @@ export default function CustomerOrders() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 pb-24 font-sans text-slate-900">
+    <div className="flex flex-col min-h-screen bg-slate-50 pb-8 font-sans text-slate-900">
       {/* Header */}
       <header className="px-4 py-3 bg-white shadow-sm flex justify-between items-center sticky top-0 z-30">
         <div className="flex items-center gap-2 text-red-600">
@@ -299,6 +306,9 @@ export default function CustomerOrders() {
           <div className="space-y-4">
             {orders.map((order) => {
               const isPending = order.status.toLowerCase() === 'pending';
+              const itemsSubtotal = order.items?.reduce((s, i) => s + parseFloat(i.price) * i.quantity, 0) || 0;
+              const hasDiscounts = parseFloat(order.discount) > 0 || parseFloat(order.offerDiscount) > 0;
+              
               return (
                 <div
                   key={order.id}
@@ -333,11 +343,11 @@ export default function CustomerOrders() {
                         </div>
                         <div className="text-right">
                           <p className="text-[8px] tracking-widest text-amber-100 font-black uppercase">CASH DUE</p>
-                          <p className="text-2xl font-black">${parseFloat(order.totalAmount).toFixed(2)}</p>
+                          <p className="text-2xl font-black">₹{parseFloat(order.totalAmount).toFixed(2)}</p>
                         </div>
                       </div>
                       <div className="p-3 bg-amber-50/50 border border-amber-200/50 text-amber-800 rounded-2xl text-[11px] leading-normal font-medium">
-                        Your order is currently <strong>Pending Payment</strong>. Go to the cashier counter, show this token code, and pay <strong>${parseFloat(order.totalAmount).toFixed(2)}</strong>. Once paid, the kitchen will begin preparation.
+                        Your order is currently <strong>Pending Payment</strong>. Go to the cashier counter, show this token code, and pay <strong>₹{parseFloat(order.totalAmount).toFixed(2)}</strong>. Once paid, the kitchen will begin preparation.
                       </div>
                     </div>
                   )}
@@ -358,11 +368,37 @@ export default function CustomerOrders() {
                           </div>
                         </div>
                         <span className="font-bold text-slate-700">
-                          ${(parseFloat(item.price) * item.quantity).toFixed(2)}
+                          ₹{(parseFloat(item.price) * item.quantity).toFixed(2)}
                         </span>
                       </div>
                     ))}
                   </div>
+
+                  {/* Detailed receipt breakdown if discount or offer exists */}
+                  {hasDiscounts && (
+                    <div className="bg-slate-50 rounded-2xl p-3.5 text-xs space-y-2 border border-slate-100">
+                      <div className="flex justify-between text-slate-500 font-semibold">
+                        <span>Subtotal</span>
+                        <span>₹{itemsSubtotal.toFixed(2)}</span>
+                      </div>
+                      {order.offer && parseFloat(order.offerDiscount) > 0 && (
+                        <div className="flex justify-between text-emerald-600 font-bold">
+                          <span>Offer ({order.offer.code})</span>
+                          <span>-₹{parseFloat(order.offerDiscount).toFixed(2)}</span>
+                        </div>
+                      )}
+                      {order.pointsRedeemed > 0 && (
+                        <div className="flex justify-between text-emerald-600 font-bold">
+                          <span>Points Discount</span>
+                          <span>-₹{parseFloat(order.pointsRedeemed.toString()).toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-slate-500 font-semibold border-t pt-1.5 border-dashed">
+                        <span>Taxes &amp; Charges (5%)</span>
+                        <span>₹{((itemsSubtotal - parseFloat(order.offerDiscount) - order.pointsRedeemed) * 0.05).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Total amount & points earned */}
                   <div className="flex justify-between items-center text-xs">
@@ -373,7 +409,7 @@ export default function CustomerOrders() {
                       <span className="text-slate-400 font-bold text-[10px] mr-1.5">
                         {isPending ? 'Due' : 'Paid'}
                       </span>
-                      <span className="text-red-600 font-black text-base">${parseFloat(order.totalAmount).toFixed(2)}</span>
+                      <span className="text-red-600 font-black text-base">₹{parseFloat(order.totalAmount).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

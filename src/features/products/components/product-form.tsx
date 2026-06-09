@@ -512,7 +512,7 @@ export default function ProductForm({
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form id="product-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <FormField
                     control={form.control}
@@ -634,22 +634,6 @@ export default function ProductForm({
                     )}
                   />
                 )}
-
-                <div className="flex justify-end space-x-2 pt-4">
-                  <Link
-                    href="/dashboard/product"
-                    className={cn(buttonVariants({ variant: 'outline' }))}
-                  >
-                    Cancel
-                  </Link>
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className="min-w-[100px]"
-                  >
-                    {isLoading ? <IconLoader2 className="h-4 w-4 animate-spin" /> : 'Save Product'}
-                  </Button>
-                </div>
               </form>
             </Form>
           </CardContent>
@@ -810,6 +794,23 @@ export default function ProductForm({
             </CardContent>
           </Card>
         )}
+
+        <div className="flex justify-end space-x-2 pt-4">
+          <Link
+            href="/dashboard/product"
+            className={cn(buttonVariants({ variant: 'outline' }))}
+          >
+            Cancel
+          </Link>
+          <Button
+            type="submit"
+            form="product-form"
+            disabled={isLoading}
+            className="min-w-[120px]"
+          >
+            {isLoading ? <IconLoader2 className="h-4 w-4 animate-spin" /> : 'Save Product'}
+          </Button>
+        </div>
       </div>
     </div>
 

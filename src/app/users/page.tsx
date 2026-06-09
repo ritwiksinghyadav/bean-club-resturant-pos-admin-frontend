@@ -91,6 +91,12 @@ export default function CustomerMenu() {
   const [createdOrderDetails, setCreatedOrderDetails] = useState<CreatedOrderDetails | null>(null);
   const [showProfileConfirm, setShowProfileConfirm] = useState(false);
 
+  // Offers & Promo Codes State
+  const [offers, setOffers] = useState<any[]>([]);
+  const [appliedOfferCode, setAppliedOfferCode] = useState<string | null>(null);
+  const [appliedOfferDiscount, setAppliedOfferDiscount] = useState<number>(0);
+  const [appliedOffer, setAppliedOffer] = useState<any | null>(null);
+
   // Modals
   const [selectedItemForVariants, setSelectedItemForVariants] = useState<MenuItem | null>(null);
   const [selectedVariantId, setSelectedVariantId] = useState('');
@@ -152,12 +158,31 @@ export default function CustomerMenu() {
     }
   };
 
+  // Fetch active offers
+  const fetchActiveOffers = async (authToken: string) => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const res = await fetch(`${apiUrl}/users/offers`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      const data = await res.json();
+      if (data.success && data.result?.offers) {
+        setOffers(data.result.offers);
+      }
+    } catch {
+      // silent
+    }
+  };
+
   useEffect(() => {
-    if (token) fetchLoyaltyBalance(token);
+    if (token) {
+      fetchLoyaltyBalance(token);
+      fetchActiveOffers(token);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  if (!mounted) return null;
+
 
   // Derived data
   const allItems = menu.flatMap((c) => c.menuItems);
@@ -176,11 +201,69 @@ export default function CustomerMenu() {
     cartItems.filter((i) => i.menuItemId === id).reduce((s, i) => s + i.quantity, 0);
 
   // Pricing
-  const maxPointsToRedeem = Math.min(loyaltyBalance, Math.floor(cartSubtotal));
+  const offerDiscountAmount = appliedOfferDiscount;
+  const amountAfterOffer = Math.max(0, cartSubtotal - offerDiscountAmount);
+  const maxPointsToRedeem = Math.min(loyaltyBalance, Math.floor(amountAfterOffer));
   const pointsDiscount = redeemPointsChecked ? maxPointsToRedeem : 0;
-  const netAmount = Math.max(0, cartSubtotal - pointsDiscount);
+  const netAmount = Math.max(0, amountAfterOffer - pointsDiscount);
   const taxAmount = netAmount * 0.05;
   const finalAmountToPay = netAmount + taxAmount;
+
+  // Re-validate coupon code if cart items subtotal changes
+  useEffect(() => {
+    if (appliedOfferCode && appliedOffer) {
+      const minBill = parseFloat(appliedOffer.minBillAmount);
+      if (cartSubtotal < minBill) {
+        setAppliedOfferCode(null);
+        setAppliedOfferDiscount(0);
+        setAppliedOffer(null);
+        toast.error(`Coupon ${appliedOffer.code} removed because subtotal is below ₹${minBill}`);
+      } else {
+        // Re-calculate percentage discount based on new subtotal
+        if (appliedOffer.discountType === 'percentage') {
+          let calculated = (cartSubtotal * parseFloat(appliedOffer.discountValue)) / 100;
+          if (appliedOffer.maxDiscount && parseFloat(appliedOffer.maxDiscount) > 0) {
+            calculated = Math.min(calculated, parseFloat(appliedOffer.maxDiscount));
+          }
+          setAppliedOfferDiscount(calculated);
+        } else if (appliedOffer.discountType === 'fixed') {
+          setAppliedOfferDiscount(Math.min(parseFloat(appliedOffer.discountValue), cartSubtotal));
+        }
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartSubtotal, appliedOfferCode, appliedOffer]);
+
+  const handleApplyOffer = async (code: string) => {
+    if (!token) throw new Error('Authentication required');
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+    const res = await fetch(`${apiUrl}/users/offers/validate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ code, billAmount: cartSubtotal }),
+    });
+    const data = await res.json();
+    if (res.ok && data.success && data.result) {
+      setAppliedOfferCode(data.result.offer.code);
+      setAppliedOfferDiscount(parseFloat(data.result.discountAmount));
+      setAppliedOffer(data.result.offer);
+      toast.success(`Coupon ${data.result.offer.code} applied successfully!`);
+    } else {
+      throw new Error(data.message || 'Failed to apply coupon');
+    }
+  };
+
+  const handleRemoveOffer = () => {
+    setAppliedOfferCode(null);
+    setAppliedOfferDiscount(0);
+    setAppliedOffer(null);
+    toast.info('Coupon removed');
+  };
+
+  if (!mounted) return null;
 
   // Handlers
   const handleMinusClick = (item: MenuItem) => {
@@ -282,6 +365,7 @@ export default function CustomerMenu() {
         body: JSON.stringify({
           items: cartItems.map((i) => ({ menuItemId: i.menuItemId, variantId: i.variantId || null, quantity: i.quantity })),
           pointsRedeemed,
+          offerCode: appliedOfferCode,
         }),
       });
 
@@ -295,6 +379,7 @@ export default function CustomerMenu() {
             body: JSON.stringify({
               items: cartItems.map((i) => ({ menuItemId: i.menuItemId, variantId: i.variantId || null, quantity: i.quantity })),
               pointsRedeemed: 0,
+              offerCode: appliedOfferCode,
             }),
           });
         } else {
@@ -324,7 +409,7 @@ export default function CustomerMenu() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 pb-24 font-sans text-slate-900">
+    <div className={`flex flex-col min-h-screen bg-slate-50 font-sans text-slate-900 ${currentScreen === 'menu' && cartItemCount > 0 ? 'pb-24' : 'pb-8'}`}>
       <AnimatePresence mode="wait">
 
         {/* ── MENU SCREEN ─────────────────────────────── */}
@@ -477,6 +562,12 @@ export default function CustomerMenu() {
             onAddEditItems={() => { setCurrentScreen('menu'); setIsCartOpen(true); }}
             onRedeemChange={setRedeemPointsChecked}
             onPlaceOrder={handlePlaceOrderAndPayCounter}
+            
+            offers={offers}
+            appliedOfferCode={appliedOfferCode}
+            offerDiscount={offerDiscountAmount}
+            onApplyOffer={handleApplyOffer}
+            onRemoveOffer={handleRemoveOffer}
           />
         )}
 
