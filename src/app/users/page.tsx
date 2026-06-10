@@ -173,15 +173,15 @@ export default function CustomerMenu() {
 
 
 
-  // Filter out 'Others' or 'Other' categories
-  const filteredCategories = menu.filter(
+  // Filter out 'Others' or 'Other' categories for the horizontal navigation pills
+  const pillCategories = menu.filter(
     (c) => c.name.toLowerCase() !== 'others' && c.name.toLowerCase() !== 'other'
   );
 
-  // Derived data
-  const allItems = filteredCategories.flatMap((c) => c.menuItems);
+  // Derived data - include all items (including those in 'Others' category)
+  const allItems = menu.flatMap((c) => c.menuItems);
   const filteredItems = (
-    selectedCategory === 'all' ? allItems : filteredCategories.find((c) => c.id === selectedCategory)?.menuItems ?? []
+    selectedCategory === 'all' ? allItems : menu.find((c) => c.id === selectedCategory)?.menuItems ?? []
   ).filter(
     (item) =>
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -427,7 +427,7 @@ export default function CustomerMenu() {
               >
                 All
               </button>
-              {filteredCategories.map((cat) => (
+              {pillCategories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
