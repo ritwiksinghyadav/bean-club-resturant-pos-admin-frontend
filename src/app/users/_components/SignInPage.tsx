@@ -2,7 +2,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, User, ArrowLeft, Loader2, Sparkles, Coffee } from 'lucide-react';
+import {
+  Phone,
+  User,
+  ArrowLeft,
+  Loader2,
+  Sparkles,
+  Coffee
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useCartStore } from '../cart-store';
 
@@ -15,17 +22,17 @@ export default function SignInPage({ onSuccess }: SignInPageProps) {
 
   const [activeTab, setActiveTab] = useState<'register' | 'login'>('register');
   const [step, setStep] = useState<'input' | 'otp'>('input');
-  
+
   // Form values
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [otpVal, setOtpVal] = useState<string[]>(Array(6).fill(''));
-  
+
   // Timer & loading
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   // Input refs for auto-shifting focus in OTP code blocks
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -58,21 +65,31 @@ export default function SignInPage({ onSuccess }: SignInPageProps) {
 
     setLoading(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const requestPayload = {
+        phoneNumber: phone,
+        name: activeTab === 'register' ? name : undefined,
+        mode: activeTab
+      };
+      console.log(
+        `[Customer OTP Send API Request]: URL=${apiUrl}/users/auth/send-otp, Payload=`,
+        requestPayload
+      );
       const response = await fetch(`${apiUrl}/users/auth/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phoneNumber: phone,
-          name: activeTab === 'register' ? name : undefined,
-          mode: activeTab,
-        }),
+        body: JSON.stringify(requestPayload)
       });
 
       const data = await response.json();
+      console.log(
+        `[Customer OTP Send API Response]: Status=${response.status}, Body=`,
+        data
+      );
       if (response.ok && data.success) {
         toast.success(`OTP Sent! (Test Code: ${data.result.code})`, {
-          duration: 10000, // Show longer so dev/user can see code
+          duration: 10000 // Show longer so dev/user can see code
         });
         setStep('otp');
         setCountdown(60);
@@ -103,26 +120,38 @@ export default function SignInPage({ onSuccess }: SignInPageProps) {
 
     setLoading(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const requestPayload = {
+        phoneNumber: phone,
+        name: activeTab === 'register' ? name : undefined,
+        code: codeStr,
+        mode: activeTab
+      };
+      console.log(
+        `[Customer OTP Verify API Request]: URL=${apiUrl}/users/auth/verify-otp, Payload=`,
+        requestPayload
+      );
       const response = await fetch(`${apiUrl}/users/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phoneNumber: phone,
-          name: activeTab === 'register' ? name : undefined,
-          code: codeStr,
-          mode: activeTab,
-        }),
+        body: JSON.stringify(requestPayload)
       });
 
       const data = await response.json();
+      console.log(
+        `[Customer OTP Verify API Response]: Status=${response.status}, Body=`,
+        data
+      );
       if (response.ok && data.success && data.result) {
         const { accessToken, refreshToken, user } = data.result;
         setAuth(accessToken, refreshToken, user);
         toast.success(`Welcome, ${user.name}!`);
         if (onSuccess) onSuccess();
       } else {
-        toast.error(data.message || 'Invalid verification code. Please try again.');
+        toast.error(
+          data.message || 'Invalid verification code. Please try again.'
+        );
       }
     } catch (err) {
       console.error(err);
@@ -153,18 +182,31 @@ export default function SignInPage({ onSuccess }: SignInPageProps) {
         // Trigger verification
         setLoading(true);
         const codeStr = newOtp.join('');
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+        const requestPayload = {
+          phoneNumber: phone,
+          name: activeTab === 'register' ? name : undefined,
+          code: codeStr,
+          mode: activeTab
+        };
+        console.log(
+          `[Customer OTP Verify (Auto) API Request]: URL=${apiUrl}/users/auth/verify-otp, Payload=`,
+          requestPayload
+        );
         fetch(`${apiUrl}/users/auth/verify-otp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phoneNumber: phone,
-            name: activeTab === 'register' ? name : undefined,
-            code: codeStr,
-            mode: activeTab,
-          }),
+          body: JSON.stringify(requestPayload)
         })
-          .then((res) => res.json())
+          .then(async (res) => {
+            const data = await res.json();
+            console.log(
+              `[Customer OTP Verify (Auto) API Response]: Status=${res.status}, Body=`,
+              data
+            );
+            return data;
+          })
           .then((data) => {
             if (data.success && data.result) {
               const { accessToken, refreshToken, user } = data.result;
@@ -185,7 +227,10 @@ export default function SignInPage({ onSuccess }: SignInPageProps) {
   };
 
   // Handle backspace key
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
     if (e.key === 'Backspace') {
       if (!otpVal[index] && index > 0) {
         // Shift focus to previous and clear it
@@ -213,93 +258,99 @@ export default function SignInPage({ onSuccess }: SignInPageProps) {
   };
 
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-gradient-to-b from-red-50/50 via-white to-red-50/20 px-6 py-8 justify-center select-none">
-      <div className="w-full max-w-sm mx-auto flex flex-col items-center">
-        
+    <div className='flex min-h-[100dvh] flex-col justify-center bg-gradient-to-b from-red-50/50 via-white to-red-50/20 px-6 py-8 select-none'>
+      <div className='mx-auto flex w-full max-w-sm flex-col items-center'>
         {/* Coffee Brand Mascot Logo */}
-        <div className="relative mb-6">
-          <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-700 rounded-3xl flex items-center justify-center shadow-xl shadow-red-500/30 transform rotate-12 transition-transform hover:rotate-0 duration-300">
-            <Coffee className="w-10 h-10 text-white transform -rotate-12" />
+        <div className='relative mb-6'>
+          <div className='flex h-20 w-20 rotate-12 transform items-center justify-center rounded-3xl bg-gradient-to-br from-red-500 to-red-700 shadow-xl shadow-red-500/30 transition-transform duration-300 hover:rotate-0'>
+            <Coffee className='h-10 w-10 -rotate-12 transform text-white' />
           </div>
-          <div className="absolute -bottom-1 -right-1 bg-amber-400 p-1.5 rounded-full border-2 border-white shadow">
-            <Sparkles className="w-3.5 h-3.5 text-red-700" />
+          <div className='absolute -right-1 -bottom-1 rounded-full border-2 border-white bg-amber-400 p-1.5 shadow'>
+            <Sparkles className='h-3.5 w-3.5 text-red-700' />
           </div>
         </div>
 
-        <h2 className="text-2xl font-black tracking-tight text-slate-800 text-center">
+        <h2 className='text-center text-2xl font-black tracking-tight text-slate-800'>
           Bean Club POS
         </h2>
-        <p className="text-sm text-slate-500 mt-1.5 mb-8 text-center max-w-[240px] leading-normal font-medium">
+        <p className='mt-1.5 mb-8 max-w-[240px] text-center text-sm leading-normal font-medium text-slate-500'>
           Fresh brews, loyalty rewards, and instant counter payments.
         </p>
 
         {/* Outer Login Card Frame */}
-        <div className="w-full bg-white/80 backdrop-blur-md border border-slate-100 rounded-[32px] p-6 shadow-xl shadow-slate-100/50">
-          <AnimatePresence mode="wait">
-            
+        <div className='w-full rounded-[32px] border border-slate-100 bg-white/80 p-6 shadow-xl shadow-slate-100/50 backdrop-blur-md'>
+          <AnimatePresence mode='wait'>
             {/* ──── STEP 1: INPUT DETAILS ────────────────── */}
             {step === 'input' && (
               <motion.div
-                key="input-form"
+                key='input-form'
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
               >
                 {/* Modern Custom Segmented Tab Controller */}
-                <div className="relative flex bg-slate-100 p-1 rounded-2xl mb-6 border border-slate-200/40">
+                <div className='relative mb-6 flex rounded-2xl border border-slate-200/40 bg-slate-100 p-1'>
                   {/* Slider Background Pill */}
                   <motion.div
-                    className="absolute top-1 bottom-1 bg-white rounded-xl shadow-sm border border-slate-200/30"
+                    className='absolute top-1 bottom-1 rounded-xl border border-slate-200/30 bg-white shadow-sm'
                     layout
                     initial={false}
                     animate={{
                       left: activeTab === 'register' ? '4px' : '50%',
-                      right: activeTab === 'register' ? '50%' : '4px',
+                      right: activeTab === 'register' ? '50%' : '4px'
                     }}
                     transition={{ type: 'spring', stiffness: 350, damping: 28 }}
                   />
-                  
+
                   <button
-                    type="button"
+                    type='button'
                     onClick={() => setActiveTab('register')}
-                    className={`flex-1 py-2.5 text-xs font-bold text-center z-10 transition-colors duration-300 rounded-xl relative ${
-                      activeTab === 'register' ? 'text-red-700' : 'text-slate-500 hover:text-slate-800'
+                    className={`relative z-10 flex-1 rounded-xl py-2.5 text-center text-xs font-bold transition-colors duration-300 ${
+                      activeTab === 'register'
+                        ? 'text-red-700'
+                        : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
                     First time here
                   </button>
                   <button
-                    type="button"
+                    type='button'
                     onClick={() => setActiveTab('login')}
-                    className={`flex-1 py-2.5 text-xs font-bold text-center z-10 transition-colors duration-300 rounded-xl relative ${
-                      activeTab === 'login' ? 'text-red-700' : 'text-slate-500 hover:text-slate-800'
+                    className={`relative z-10 flex-1 rounded-xl py-2.5 text-center text-xs font-bold transition-colors duration-300 ${
+                      activeTab === 'login'
+                        ? 'text-red-700'
+                        : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
                     Already have account
                   </button>
                 </div>
 
-                <form onSubmit={handleSendOtp} className="space-y-4">
+                <form onSubmit={handleSendOtp} className='space-y-4'>
                   {/* Conditionally show name only for Register Mode */}
                   <AnimatePresence initial={false}>
                     {activeTab === 'register' && (
                       <motion.div
                         initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                        animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
+                        animate={{
+                          opacity: 1,
+                          height: 'auto',
+                          marginBottom: 16
+                        }}
                         exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
+                        className='overflow-hidden'
                       >
-                        <label className="text-xs font-extrabold text-slate-700 mb-1.5 block">
+                        <label className='mb-1.5 block text-xs font-extrabold text-slate-700'>
                           Full Name
                         </label>
-                        <div className="flex items-center border border-slate-200 bg-slate-50/50 rounded-2xl px-4 py-3 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500 focus-within:bg-white transition-all">
-                          <User className="w-5 h-5 text-slate-400 mr-2.5" />
+                        <div className='flex items-center rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 transition-all focus-within:border-red-500 focus-within:bg-white focus-within:ring-1 focus-within:ring-red-500'>
+                          <User className='mr-2.5 h-5 w-5 text-slate-400' />
                           <input
-                            type="text"
-                            placeholder="John Doe"
-                            className="w-full outline-none text-slate-800 text-sm placeholder-slate-400 font-bold bg-transparent"
+                            type='text'
+                            placeholder='John Doe'
+                            className='w-full bg-transparent text-sm font-bold text-slate-800 placeholder-slate-400 outline-none'
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             required={activeTab === 'register'}
@@ -311,18 +362,20 @@ export default function SignInPage({ onSuccess }: SignInPageProps) {
 
                   {/* Phone input field (common) */}
                   <div>
-                    <label className="text-xs font-extrabold text-slate-700 mb-1.5 block">
+                    <label className='mb-1.5 block text-xs font-extrabold text-slate-700'>
                       Phone Number
                     </label>
-                    <div className="flex items-center border border-slate-200 bg-slate-50/50 rounded-2xl px-4 py-3 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500 focus-within:bg-white transition-all">
-                      <Phone className="w-5 h-5 text-slate-400 mr-2.5" />
+                    <div className='flex items-center rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 transition-all focus-within:border-red-500 focus-within:bg-white focus-within:ring-1 focus-within:ring-red-500'>
+                      <Phone className='mr-2.5 h-5 w-5 text-slate-400' />
                       <input
-                        type="tel"
-                        placeholder="98765 43210"
-                        className="w-full outline-none text-slate-800 text-sm placeholder-slate-400 font-bold bg-transparent"
+                        type='tel'
+                        placeholder='98765 43210'
+                        className='w-full bg-transparent text-sm font-bold text-slate-800 placeholder-slate-400 outline-none'
                         value={phone}
                         onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          const val = e.target.value
+                            .replace(/\D/g, '')
+                            .slice(0, 10);
                           setPhone(val);
                         }}
                         required
@@ -331,13 +384,13 @@ export default function SignInPage({ onSuccess }: SignInPageProps) {
                   </div>
 
                   <button
-                    type="submit"
+                    type='submit'
                     disabled={loading}
-                    className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-red-400 disabled:to-red-500 text-white py-3.5 rounded-2xl font-black text-sm transition-all mt-6 shadow-lg shadow-red-600/20 hover:shadow-red-600/35 flex justify-center items-center gap-2 active:scale-[0.98]"
+                    className='mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 py-3.5 text-sm font-black text-white shadow-lg shadow-red-600/20 transition-all hover:from-red-700 hover:to-red-800 hover:shadow-red-600/35 active:scale-[0.98] disabled:from-red-400 disabled:to-red-500'
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <Loader2 className='h-4 w-4 animate-spin text-white' />
                         Sending code...
                       </>
                     ) : (
@@ -351,40 +404,44 @@ export default function SignInPage({ onSuccess }: SignInPageProps) {
             {/* ──── STEP 2: ENTER OTP CODE ───────────────── */}
             {step === 'otp' && (
               <motion.div
-                key="otp-form"
+                key='otp-form'
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
-                className="flex flex-col"
+                className='flex flex-col'
               >
                 {/* Back Arrow button */}
                 <button
                   onClick={() => setStep('input')}
-                  className="flex items-center text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors self-start mb-4"
+                  className='mb-4 flex items-center self-start text-xs font-bold text-slate-500 transition-colors hover:text-slate-800'
                 >
-                  <ArrowLeft className="w-4 h-4 mr-1" />
+                  <ArrowLeft className='mr-1 h-4 w-4' />
                   Change details
                 </button>
 
-                <h3 className="text-base font-extrabold text-slate-800 mb-1">
+                <h3 className='mb-1 text-base font-extrabold text-slate-800'>
                   Enter verification code
                 </h3>
-                <p className="text-xs text-slate-500 font-medium leading-normal mb-6">
-                  We sent a 6-digit verification code to <span className="font-extrabold text-slate-700">{phone}</span>.
+                <p className='mb-6 text-xs leading-normal font-medium text-slate-500'>
+                  We sent a 6-digit verification code to{' '}
+                  <span className='font-extrabold text-slate-700'>{phone}</span>
+                  .
                 </p>
 
                 {/* 6 Digit Block Inputs */}
-                <div className="flex justify-between gap-2 mb-6">
+                <div className='mb-6 flex justify-between gap-2'>
                   {otpVal.map((digit, i) => (
                     <input
                       key={i}
-                      ref={(el) => { otpRefs.current[i] = el; }}
-                      type="text"
+                      ref={(el) => {
+                        otpRefs.current[i] = el;
+                      }}
+                      type='text'
                       maxLength={1}
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      className="w-12 h-14 border-2 border-slate-200 bg-slate-50/50 rounded-2xl text-center text-xl font-black focus:border-red-600 focus:bg-white focus:ring-1 focus:ring-red-600 outline-none transition-all"
+                      inputMode='numeric'
+                      pattern='[0-9]*'
+                      className='h-14 w-12 rounded-2xl border-2 border-slate-200 bg-slate-50/50 text-center text-xl font-black transition-all outline-none focus:border-red-600 focus:bg-white focus:ring-1 focus:ring-red-600'
                       value={digit}
                       onChange={(e) => handleOtpChange(i, e.target.value)}
                       onKeyDown={(e) => handleKeyDown(i, e)}
@@ -395,12 +452,12 @@ export default function SignInPage({ onSuccess }: SignInPageProps) {
                 </div>
 
                 {/* Timer details */}
-                <div className="text-center text-xs mb-6 font-bold text-slate-500">
+                <div className='mb-6 text-center text-xs font-bold text-slate-500'>
                   {canResend ? (
                     <button
-                      type="button"
+                      type='button'
                       onClick={handleSendOtp}
-                      className="text-red-600 hover:text-red-700 transition-colors cursor-pointer"
+                      className='cursor-pointer text-red-600 transition-colors hover:text-red-700'
                     >
                       Resend code
                     </button>
@@ -412,11 +469,11 @@ export default function SignInPage({ onSuccess }: SignInPageProps) {
                 <button
                   onClick={() => handleVerifyOtp()}
                   disabled={loading || otpVal.join('').length !== 6}
-                  className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-slate-200 disabled:to-slate-300 disabled:text-slate-400 text-white py-3.5 rounded-2xl font-black text-sm transition-all shadow-lg shadow-red-600/10 disabled:shadow-none flex justify-center items-center gap-2 active:scale-[0.98]"
+                  className='flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 py-3.5 text-sm font-black text-white shadow-lg shadow-red-600/10 transition-all hover:from-red-700 hover:to-red-800 active:scale-[0.98] disabled:from-slate-200 disabled:to-slate-300 disabled:text-slate-400 disabled:shadow-none'
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <Loader2 className='h-4 w-4 animate-spin text-white' />
                       Verifying...
                     </>
                   ) : (
@@ -425,7 +482,6 @@ export default function SignInPage({ onSuccess }: SignInPageProps) {
                 </button>
               </motion.div>
             )}
-            
           </AnimatePresence>
         </div>
       </div>

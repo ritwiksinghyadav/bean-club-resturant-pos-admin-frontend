@@ -19,7 +19,7 @@ import { fetchWithAuth } from '@/lib/api-client';
 
 const containerVariants = {
   hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.05 } },
+  show: { opacity: 1, transition: { staggerChildren: 0.05 } }
 };
 
 export default function CustomerMenu() {
@@ -55,11 +55,12 @@ export default function CustomerMenu() {
   const silentReauthHelper = async (): Promise<string | null> => {
     try {
       if (!storeRefreshToken) return null;
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
       const res = await fetch(`${apiUrl}/users/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: storeRefreshToken }),
+        body: JSON.stringify({ refreshToken: storeRefreshToken })
       });
       if (res.status >= 400 && res.status < 500) {
         setAuth(null, null, null);
@@ -86,14 +87,17 @@ export default function CustomerMenu() {
     if (!storeToken && storeRefreshToken) {
       silentReauthHelper();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted, storeToken, storeRefreshToken]);
 
   // UI flow
-  const [currentScreen, setCurrentScreen] = useState<'menu' | 'checkout' | 'success'>('menu');
+  const [currentScreen, setCurrentScreen] = useState<
+    'menu' | 'checkout' | 'success'
+  >('menu');
   const [loyaltyBalance, setLoyaltyBalance] = useState(0);
   const [redeemPointsChecked, setRedeemPointsChecked] = useState(false);
-  const [createdOrderDetails, setCreatedOrderDetails] = useState<CreatedOrderDetails | null>(null);
+  const [createdOrderDetails, setCreatedOrderDetails] =
+    useState<CreatedOrderDetails | null>(null);
   const [showProfileConfirm, setShowProfileConfirm] = useState(false);
 
   // Offers & Promo Codes State
@@ -103,7 +107,8 @@ export default function CustomerMenu() {
   const [appliedOffer, setAppliedOffer] = useState<any | null>(null);
 
   // Modals
-  const [selectedItemForVariants, setSelectedItemForVariants] = useState<MenuItem | null>(null);
+  const [selectedItemForVariants, setSelectedItemForVariants] =
+    useState<MenuItem | null>(null);
   const [selectedVariantId, setSelectedVariantId] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -120,7 +125,8 @@ export default function CustomerMenu() {
     setMounted(true);
     (async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
         const res = await fetch(`${apiUrl}/users/menu`);
         const data = await res.json();
         if (data.success && data.result?.menu) setMenu(data.result.menu);
@@ -136,14 +142,16 @@ export default function CustomerMenu() {
   // Fetch loyalty balance
   const fetchLoyaltyBalance = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
       const res = await fetchWithAuth(`${apiUrl}/users/loyalty`);
       if (res.status === 401) {
         setIsAuthOpen(true);
         return;
       }
       const data = await res.json();
-      if (data.success && data.result) setLoyaltyBalance(data.result.balance || 0);
+      if (data.success && data.result)
+        setLoyaltyBalance(data.result.balance || 0);
     } catch {
       // silent
     }
@@ -152,7 +160,8 @@ export default function CustomerMenu() {
   // Fetch active offers
   const fetchActiveOffers = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
       const res = await fetchWithAuth(`${apiUrl}/users/offers`);
       const data = await res.json();
       if (data.success && data.result?.offers) {
@@ -168,10 +177,8 @@ export default function CustomerMenu() {
       fetchLoyaltyBalance();
       fetchActiveOffers();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
-
-
 
   // Filter out 'Others' or 'Other' categories for the horizontal navigation pills
   const pillCategories = menu.filter(
@@ -181,23 +188,32 @@ export default function CustomerMenu() {
   // Derived data - include all items (including those in 'Others' category)
   const allItems = menu.flatMap((c) => c.menuItems);
   const filteredItems = (
-    selectedCategory === 'all' ? allItems : menu.find((c) => c.id === selectedCategory)?.menuItems ?? []
+    selectedCategory === 'all'
+      ? allItems
+      : (menu.find((c) => c.id === selectedCategory)?.menuItems ?? [])
   ).filter(
     (item) =>
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.tags?.some((t) => t.tag?.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      item.tags?.some((t) =>
+        t.tag?.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
   );
 
   const cartSubtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
   const cartItemCount = cartItems.reduce((s, i) => s + i.quantity, 0);
   const getItemQuantity = (id: string) =>
-    cartItems.filter((i) => i.menuItemId === id).reduce((s, i) => s + i.quantity, 0);
+    cartItems
+      .filter((i) => i.menuItemId === id)
+      .reduce((s, i) => s + i.quantity, 0);
 
   // Pricing
   const offerDiscountAmount = appliedOfferDiscount;
   const amountAfterOffer = Math.max(0, cartSubtotal - offerDiscountAmount);
-  const maxPointsToRedeem = Math.min(loyaltyBalance, Math.floor(amountAfterOffer));
+  const maxPointsToRedeem = Math.min(
+    loyaltyBalance,
+    Math.floor(amountAfterOffer)
+  );
   const pointsDiscount = redeemPointsChecked ? maxPointsToRedeem : 0;
   const netAmount = Math.max(0, amountAfterOffer - pointsDiscount);
   const taxAmount = netAmount * 0.05;
@@ -214,25 +230,35 @@ export default function CustomerMenu() {
       } else {
         // Re-calculate percentage discount based on new subtotal
         if (appliedOffer.discountType === 'percentage') {
-          let calculated = (cartSubtotal * parseFloat(appliedOffer.discountValue)) / 100;
-          if (appliedOffer.maxDiscount && parseFloat(appliedOffer.maxDiscount) > 0) {
-            calculated = Math.min(calculated, parseFloat(appliedOffer.maxDiscount));
+          let calculated =
+            (cartSubtotal * parseFloat(appliedOffer.discountValue)) / 100;
+          if (
+            appliedOffer.maxDiscount &&
+            parseFloat(appliedOffer.maxDiscount) > 0
+          ) {
+            calculated = Math.min(
+              calculated,
+              parseFloat(appliedOffer.maxDiscount)
+            );
           }
           setAppliedOfferDiscount(calculated);
         } else if (appliedOffer.discountType === 'fixed') {
-          setAppliedOfferDiscount(Math.min(parseFloat(appliedOffer.discountValue), cartSubtotal));
+          setAppliedOfferDiscount(
+            Math.min(parseFloat(appliedOffer.discountValue), cartSubtotal)
+          );
         }
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartSubtotal, appliedOfferCode, appliedOffer]);
 
   const handleApplyOffer = async (code: string) => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
     const res = await fetchWithAuth(`${apiUrl}/users/offers/validate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, billAmount: cartSubtotal }),
+      body: JSON.stringify({ code, billAmount: cartSubtotal })
     });
     const data = await res.json();
     if (res.ok && data.success && data.result) {
@@ -267,13 +293,21 @@ export default function CustomerMenu() {
     } else {
       const target = cartItems.find((i) => i.menuItemId === item.id);
       if (target) updateQuantity(item.id, target.quantity + 1);
-      else addItem({ menuItemId: item.id, name: item.name, price: parseFloat(item.basePrice), imageUrl: item.imageUrl });
+      else
+        addItem({
+          menuItemId: item.id,
+          name: item.name,
+          price: parseFloat(item.basePrice),
+          imageUrl: item.imageUrl
+        });
     }
   };
 
   const handleAddVariantConfirm = () => {
     if (!selectedItemForVariants) return;
-    const rel = selectedItemForVariants.variants.find((v) => v.id === selectedVariantId);
+    const rel = selectedItemForVariants.variants.find(
+      (v) => v.id === selectedVariantId
+    );
     if (!rel) return;
     addItem({
       menuItemId: selectedItemForVariants.id,
@@ -281,7 +315,7 @@ export default function CustomerMenu() {
       price: parseFloat(rel.price),
       imageUrl: selectedItemForVariants.imageUrl,
       variantId: rel.id,
-      variantName: rel.variant.name,
+      variantName: rel.variant.name
     });
     setSelectedItemForVariants(null);
   };
@@ -295,16 +329,29 @@ export default function CustomerMenu() {
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!authName || !authPhone) { toast.error('Please enter name and phone number'); return; }
+    if (!authName || !authPhone) {
+      toast.error('Please enter name and phone number');
+      return;
+    }
     setAuthLoading(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const requestPayload = { name: authName, phoneNumber: authPhone };
+      console.log(
+        `[Customer Legacy Login API Request]: URL=${apiUrl}/users/auth/login, Payload=`,
+        requestPayload
+      );
       const res = await fetch(`${apiUrl}/users/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: authName, phoneNumber: authPhone }),
+        body: JSON.stringify(requestPayload)
       });
       const data = await res.json();
+      console.log(
+        `[Customer Legacy Login API Response]: Status=${res.status}, Body=`,
+        data
+      );
       if (data.success && data.result) {
         const { accessToken, refreshToken, user } = data.result;
         setAuth(accessToken, refreshToken, user);
@@ -328,16 +375,21 @@ export default function CustomerMenu() {
   const handlePlaceOrderAndPayCounter = async () => {
     setIsPlacingOrder(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
       const pointsRedeemed = redeemPointsChecked ? maxPointsToRedeem : 0;
       const res = await fetchWithAuth(`${apiUrl}/users/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: cartItems.map((i) => ({ menuItemId: i.menuItemId, variantId: i.variantId || null, quantity: i.quantity })),
+          items: cartItems.map((i) => ({
+            menuItemId: i.menuItemId,
+            variantId: i.variantId || null,
+            quantity: i.quantity
+          })),
           pointsRedeemed,
-          offerCode: appliedOfferCode,
-        }),
+          offerCode: appliedOfferCode
+        })
       });
 
       if (res.status === 401) {
@@ -362,36 +414,40 @@ export default function CustomerMenu() {
   };
 
   return (
-    <div className={`flex flex-col min-h-screen bg-slate-50 font-sans text-slate-900 ${currentScreen === 'menu' && cartItemCount > 0 ? 'pb-24' : 'pb-8'}`}>
-      <AnimatePresence mode="wait">
-
+    <div
+      className={`flex min-h-screen flex-col bg-slate-50 font-sans text-slate-900 ${currentScreen === 'menu' && cartItemCount > 0 ? 'pb-24' : 'pb-8'}`}
+    >
+      <AnimatePresence mode='wait'>
         {/* ── MENU SCREEN ─────────────────────────────── */}
         {currentScreen === 'menu' && (
           <motion.div
-            key="menu"
+            key='menu'
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
-            className="flex flex-col flex-1 w-full"
+            className='flex w-full flex-1 flex-col'
           >
             {/* Header */}
-            <header className="px-4 py-3 bg-white shadow-sm flex justify-between items-center sticky top-0 z-30">
-              <div className="flex items-center gap-2 text-red-600">
-                <Utensils className="w-6 h-6" />
-                <h1 className="text-xl font-black tracking-tight">Bean Club</h1>
+            <header className='sticky top-0 z-30 flex items-center justify-between bg-white px-4 py-3 shadow-sm'>
+              <div className='flex items-center gap-2 text-red-600'>
+                <Utensils className='h-6 w-6' />
+                <h1 className='text-xl font-black tracking-tight'>Bean Club</h1>
               </div>
               <div>
                 {customer ? (
                   <button
                     onClick={() => setIsSettingsOpen(true)}
-                    title="Profile Settings"
-                    className="w-8 h-8 bg-red-100 hover:bg-red-200 active:scale-95 transition-all rounded-full flex items-center justify-center text-red-600 font-bold text-sm cursor-pointer border border-red-200/50"
+                    title='Profile Settings'
+                    className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-red-200/50 bg-red-100 text-sm font-bold text-red-600 transition-all hover:bg-red-200 active:scale-95'
                   >
                     {customer.name.charAt(0).toUpperCase()}
                   </button>
                 ) : (
-                  <button onClick={() => setIsAuthOpen(true)} className="text-sm font-semibold text-slate-600 hover:text-red-600">
+                  <button
+                    onClick={() => setIsAuthOpen(true)}
+                    className='text-sm font-semibold text-slate-600 hover:text-red-600'
+                  >
                     Log in
                   </button>
                 )}
@@ -399,30 +455,35 @@ export default function CustomerMenu() {
             </header>
 
             {/* Search Bar */}
-            <div className="px-4 pt-4 pb-2 bg-white shadow-sm">
-              <div className="relative flex items-center bg-white border border-gray-300 rounded-xl px-4 py-2.5 shadow-sm focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500 transition-all">
-                <Search className="w-5 h-5 text-red-500 mr-2" />
+            <div className='bg-white px-4 pt-4 pb-2 shadow-sm'>
+              <div className='relative flex items-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 shadow-sm transition-all focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500'>
+                <Search className='mr-2 h-5 w-5 text-red-500' />
                 <input
-                  type="text"
-                  placeholder="Restaurant menu, items..."
-                  className="bg-transparent text-sm w-full outline-none text-slate-800 placeholder-slate-400 font-medium"
+                  type='text'
+                  placeholder='Restaurant menu, items...'
+                  className='w-full bg-transparent text-sm font-medium text-slate-800 placeholder-slate-400 outline-none'
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-slate-600 p-1">
-                    <X className="w-4 h-4" />
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className='p-1 text-slate-400 hover:text-slate-600'
+                  >
+                    <X className='h-4 w-4' />
                   </button>
                 )}
               </div>
             </div>
 
             {/* Category Pills */}
-            <div className="bg-white border-b border-gray-100 px-4 py-3 overflow-x-auto flex gap-3 no-scrollbar sticky top-[68px] z-20">
+            <div className='no-scrollbar sticky top-[68px] z-20 flex gap-3 overflow-x-auto border-b border-gray-100 bg-white px-4 py-3'>
               <button
                 onClick={() => setSelectedCategory('all')}
-                className={`px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap border transition-all ${
-                  selectedCategory === 'all' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white text-slate-600 border-gray-200 hover:bg-gray-50'
+                className={`rounded-lg border px-4 py-1.5 text-sm font-semibold whitespace-nowrap transition-all ${
+                  selectedCategory === 'all'
+                    ? 'border-red-200 bg-red-50 text-red-600'
+                    : 'border-gray-200 bg-white text-slate-600 hover:bg-gray-50'
                 }`}
               >
                 All
@@ -431,8 +492,10 @@ export default function CustomerMenu() {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap border transition-all ${
-                    selectedCategory === cat.id ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white text-slate-600 border-gray-200 hover:bg-gray-50'
+                  className={`rounded-lg border px-4 py-1.5 text-sm font-semibold whitespace-nowrap transition-all ${
+                    selectedCategory === cat.id
+                      ? 'border-red-200 bg-red-50 text-red-600'
+                      : 'border-gray-200 bg-white text-slate-600 hover:bg-gray-50'
                   }`}
                 >
                   {cat.name}
@@ -441,20 +504,29 @@ export default function CustomerMenu() {
             </div>
 
             {/* Menu List */}
-            <div className="flex-1 px-4 py-4 space-y-4 max-w-2xl mx-auto w-full">
+            <div className='mx-auto w-full max-w-2xl flex-1 space-y-4 px-4 py-4'>
               {loading ? (
-                <div className="flex flex-col items-center justify-center py-20 text-slate-500 space-y-3">
-                  <Loader2 className="w-8 h-8 animate-spin text-red-500" />
-                  <p className="text-sm font-medium">Fetching menu...</p>
+                <div className='flex flex-col items-center justify-center space-y-3 py-20 text-slate-500'>
+                  <Loader2 className='h-8 w-8 animate-spin text-red-500' />
+                  <p className='text-sm font-medium'>Fetching menu...</p>
                 </div>
               ) : filteredItems.length === 0 ? (
-                <div className="text-center py-20 text-slate-500 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-                  <Search className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-base font-semibold text-slate-700">No items found</p>
-                  <p className="text-sm mt-1">Try a different search term or category.</p>
+                <div className='rounded-2xl border border-gray-100 bg-white p-6 py-20 text-center text-slate-500 shadow-sm'>
+                  <Search className='mx-auto mb-3 h-12 w-12 text-gray-300' />
+                  <p className='text-base font-semibold text-slate-700'>
+                    No items found
+                  </p>
+                  <p className='mt-1 text-sm'>
+                    Try a different search term or category.
+                  </p>
                 </div>
               ) : (
-                <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-4">
+                <motion.div
+                  variants={containerVariants}
+                  initial='hidden'
+                  animate='show'
+                  className='space-y-4'
+                >
                   {filteredItems.map((item) => (
                     <MenuCard
                       key={item.id}
@@ -476,23 +548,23 @@ export default function CustomerMenu() {
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: 100, opacity: 0 }}
                   transition={{ type: 'spring', bounce: 0.4, duration: 0.6 }}
-                  className="fixed bottom-24 left-4 right-4 z-40 max-w-2xl mx-auto"
+                  className='fixed right-4 bottom-24 left-4 z-40 mx-auto max-w-2xl'
                 >
                   <button
                     onClick={() => setIsCartOpen(true)}
-                    className="w-full bg-red-600 shadow-xl shadow-red-600/40 text-white p-4 rounded-2xl flex items-center justify-between transition-all active:scale-95 border border-red-500"
+                    className='flex w-full items-center justify-between rounded-2xl border border-red-500 bg-red-600 p-4 text-white shadow-xl shadow-red-600/40 transition-all active:scale-95'
                   >
-                    <div className="flex flex-col items-start">
-                      <span className="font-extrabold text-sm tracking-wide">
+                    <div className='flex flex-col items-start'>
+                      <span className='text-sm font-extrabold tracking-wide'>
                         {cartItemCount} item{cartItemCount > 1 ? 's' : ''} added
                       </span>
-                      <span className="font-bold text-xs text-red-100 mt-0.5">
+                      <span className='mt-0.5 text-xs font-bold text-red-100'>
                         Subtotal: ₹{cartSubtotal.toFixed(2)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 font-black text-base tracking-wide bg-white/20 px-4 py-2 rounded-xl">
+                    <div className='flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-base font-black tracking-wide'>
                       Next
-                      <ArrowRight className="w-5 h-5" />
+                      <ArrowRight className='h-5 w-5' />
                     </div>
                   </button>
                 </motion.div>
@@ -516,10 +588,12 @@ export default function CustomerMenu() {
             customer={customer}
             onBack={() => setCurrentScreen('menu')}
             onChangeCustomer={() => setIsAuthOpen(true)}
-            onAddEditItems={() => { setCurrentScreen('menu'); setIsCartOpen(true); }}
+            onAddEditItems={() => {
+              setCurrentScreen('menu');
+              setIsCartOpen(true);
+            }}
             onRedeemChange={setRedeemPointsChecked}
             onPlaceOrder={handlePlaceOrderAndPayCounter}
-            
             offers={offers}
             appliedOfferCode={appliedOfferCode}
             offerDiscount={offerDiscountAmount}
@@ -539,7 +613,6 @@ export default function CustomerMenu() {
             }}
           />
         )}
-
       </AnimatePresence>
 
       {/* ── CART DRAWER ─────────────────────────────────── */}
@@ -556,10 +629,6 @@ export default function CustomerMenu() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
-
-
-
-
 
       {/* ── VARIANT DRAWER ──────────────────────────────── */}
       {selectedItemForVariants && (

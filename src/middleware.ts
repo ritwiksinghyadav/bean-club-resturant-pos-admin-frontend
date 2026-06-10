@@ -1,17 +1,18 @@
-import { auth } from "@/auth";
-import { NextResponse } from "next/server";
+import { auth } from '@/auth';
+import { NextResponse } from 'next/server';
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const { nextUrl } = req;
-  const host = req.headers.get("host") || "";
+  const host = req.headers.get('host') || '';
   const pathname = nextUrl.pathname;
 
-  const isApiAuthRoute = pathname.startsWith("/api/auth");
-  const isPublicRoute = pathname.startsWith("/auth");
+  const isApiAuthRoute = pathname.startsWith('/api/auth');
+  const isPublicRoute = pathname.startsWith('/auth');
 
-  // Determine if it is the users subdomain
-  const isUsersSubdomain = host.includes("users.localhost");
+  // Determine if it is the users subdomain (starts with 'users.' or contains 'users.localhost')
+  const isUsersSubdomain =
+    host.startsWith('users.') || host.includes('users.localhost');
 
   if (isApiAuthRoute) {
     return;
@@ -20,7 +21,7 @@ export default auth((req) => {
   // Rewrite for users subdomain (to serve the customer POS pages from /users prefix)
   if (isUsersSubdomain) {
     // If the path doesn't already start with /users, rewrite it!
-    if (!pathname.startsWith("/users")) {
+    if (!pathname.startsWith('/users')) {
       const url = nextUrl.clone();
       url.pathname = `/users${pathname}`;
       return NextResponse.rewrite(url);
@@ -29,19 +30,19 @@ export default auth((req) => {
   }
 
   // For anything starting with /users (e.g. if accessed directly as localhost:3000/users), do not require admin auth
-  if (pathname.startsWith("/users")) {
+  if (pathname.startsWith('/users')) {
     return;
   }
 
   if (isPublicRoute) {
     if (isLoggedIn) {
-      return Response.redirect(new URL("/dashboard/overview", nextUrl));
+      return Response.redirect(new URL('/dashboard/overview', nextUrl));
     }
     return;
   }
 
   if (!isLoggedIn) {
-    return Response.redirect(new URL("/auth/sign-in", nextUrl));
+    return Response.redirect(new URL('/auth/sign-in', nextUrl));
   }
 
   return;

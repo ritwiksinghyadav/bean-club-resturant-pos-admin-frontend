@@ -47,11 +47,12 @@ export default function CustomerLoyalty() {
   const silentReauthHelper = async (): Promise<string | null> => {
     try {
       if (!storeRefreshToken) return null;
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
       const res = await fetch(`${apiUrl}/users/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: storeRefreshToken }),
+        body: JSON.stringify({ refreshToken: storeRefreshToken })
       });
 
       if (res.status >= 400 && res.status < 500) {
@@ -79,7 +80,8 @@ export default function CustomerLoyalty() {
   const fetchLoyalty = async () => {
     setLoading(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
       const res = await fetchWithAuth(`${apiUrl}/users/loyalty`);
 
       if (res.status === 401) {
@@ -138,13 +140,23 @@ export default function CustomerLoyalty() {
 
     setAuthLoading(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const requestPayload = { name: authName, phoneNumber: authPhone };
+      console.log(
+        `[Customer Legacy Login API Request]: URL=${apiUrl}/users/auth/login, Payload=`,
+        requestPayload
+      );
       const res = await fetch(`${apiUrl}/users/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: authName, phoneNumber: authPhone }),
+        body: JSON.stringify(requestPayload)
       });
       const data = await res.json();
+      console.log(
+        `[Customer Legacy Login API Response]: Status=${res.status}, Body=`,
+        data
+      );
 
       if (data.success && data.result) {
         const { accessToken, refreshToken, user } = data.result;
@@ -177,109 +189,136 @@ export default function CustomerLoyalty() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 pb-24 font-sans text-slate-900">
+    <div className='flex min-h-screen flex-col bg-slate-50 pb-24 font-sans text-slate-900'>
       {/* Header */}
-      <header className="px-4 py-3 bg-white shadow-sm flex justify-between items-center sticky top-0 z-30">
-        <div className="flex items-center gap-2 text-red-600">
-          <Award className="w-5 h-5" />
-          <h1 className="text-xl font-black tracking-tight">Bean Club Rewards</h1>
+      <header className='sticky top-0 z-30 flex items-center justify-between bg-white px-4 py-3 shadow-sm'>
+        <div className='flex items-center gap-2 text-red-600'>
+          <Award className='h-5 w-5' />
+          <h1 className='text-xl font-black tracking-tight'>
+            Bean Club Rewards
+          </h1>
         </div>
         {token && (
           <button
             onClick={() => fetchLoyalty()}
             disabled={loading}
-            className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-red-600 bg-slate-100 hover:bg-red-50 px-3 py-1.5 rounded-xl transition-all"
+            className='flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600 transition-all hover:bg-red-50 hover:text-red-600'
           >
-            <Loader2 className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <Loader2
+              className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`}
+            />
             Refresh
           </button>
         )}
       </header>
 
       {/* Main Panel */}
-      <div className="flex-1 px-4 py-4 max-w-2xl mx-auto w-full space-y-6">
+      <div className='mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-4'>
         {loading && ledger.length === 0 ? (
           /* Loading States */
-          <div className="flex flex-col items-center justify-center py-20 text-slate-500 space-y-3">
-            <Loader2 className="w-8 h-8 animate-spin text-red-500" />
-            <p className="text-sm font-medium">Fetching points balance...</p>
+          <div className='flex flex-col items-center justify-center space-y-3 py-20 text-slate-500'>
+            <Loader2 className='h-8 w-8 animate-spin text-red-500' />
+            <p className='text-sm font-medium'>Fetching points balance...</p>
           </div>
         ) : (
           /* Loyalty Card & Statement */
-          <div className="space-y-6">
+          <div className='space-y-6'>
             {/* Premium Gold Loyalty Card */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 rounded-3xl p-6 text-white shadow-xl shadow-amber-600/10 flex flex-col justify-between aspect-[1.7/1] border border-amber-400/20">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-xl"></div>
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full -ml-8 -mb-8 blur-lg"></div>
+            <div className='relative flex aspect-[1.7/1] flex-col justify-between overflow-hidden rounded-3xl border border-amber-400/20 bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 p-6 text-white shadow-xl shadow-amber-600/10'>
+              <div className='absolute top-0 right-0 -mt-10 -mr-10 h-32 w-32 rounded-full bg-white/5 blur-xl'></div>
+              <div className='absolute bottom-0 left-0 -mb-8 -ml-8 h-24 w-24 rounded-full bg-black/10 blur-lg'></div>
 
-              <div className="flex justify-between items-start z-10">
+              <div className='z-10 flex items-start justify-between'>
                 <div>
-                  <p className="text-[10px] tracking-widest text-amber-100/80 font-bold uppercase">GOLD MEMBER</p>
-                  <h3 className="text-lg font-black tracking-tight mt-1">{customer?.name}</h3>
+                  <p className='text-[10px] font-bold tracking-widest text-amber-100/80 uppercase'>
+                    GOLD MEMBER
+                  </p>
+                  <h3 className='mt-1 text-lg font-black tracking-tight'>
+                    {customer?.name}
+                  </h3>
                 </div>
-                <div className="bg-white/10 p-2.5 rounded-2xl border border-white/10 backdrop-blur-md">
-                  <Coffee className="w-5 h-5 text-amber-200" />
+                <div className='rounded-2xl border border-white/10 bg-white/10 p-2.5 backdrop-blur-md'>
+                  <Coffee className='h-5 w-5 text-amber-200' />
                 </div>
               </div>
 
-              <div className="mt-8 z-10">
-                <p className="text-[10px] tracking-wider text-amber-100/70 font-bold uppercase">TOTAL POINTS BALANCE</p>
-                <div className="flex items-baseline gap-1 mt-1">
-                  <span className="text-4xl font-extrabold tracking-tight">{balance}</span>
-                  <span className="text-xs font-bold text-amber-200">PTS</span>
+              <div className='z-10 mt-8'>
+                <p className='text-[10px] font-bold tracking-wider text-amber-100/70 uppercase'>
+                  TOTAL POINTS BALANCE
+                </p>
+                <div className='mt-1 flex items-baseline gap-1'>
+                  <span className='text-4xl font-extrabold tracking-tight'>
+                    {balance}
+                  </span>
+                  <span className='text-xs font-bold text-amber-200'>PTS</span>
                 </div>
               </div>
             </div>
 
             {/* Quick stats */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white border border-gray-100 shadow-sm rounded-3xl p-4 flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                  <Coins className="w-4 h-4" />
+            <div className='grid grid-cols-2 gap-4'>
+              <div className='flex items-center gap-3 rounded-3xl border border-gray-100 bg-white p-4 shadow-sm'>
+                <div className='flex items-center justify-center rounded-xl bg-amber-50 p-2.5 text-amber-600'>
+                  <Coins className='h-4 w-4' />
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 font-semibold">Earn Rate</p>
-                  <p className="text-xs font-bold text-slate-700">1 pt / ₹1</p>
+                  <p className='text-[10px] font-semibold text-slate-400'>
+                    Earn Rate
+                  </p>
+                  <p className='text-xs font-bold text-slate-700'>1 pt / ₹1</p>
                 </div>
               </div>
-              <div className="bg-white border border-gray-100 shadow-sm rounded-3xl p-4 flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4" />
+              <div className='flex items-center gap-3 rounded-3xl border border-gray-100 bg-white p-4 shadow-sm'>
+                <div className='flex items-center justify-center rounded-xl bg-emerald-50 p-2.5 text-emerald-600'>
+                  <TrendingUp className='h-4 w-4' />
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 font-semibold">Value Rate</p>
-                  <p className="text-xs font-bold text-emerald-600">₹ 1.00 / pt</p>
+                  <p className='text-[10px] font-semibold text-slate-400'>
+                    Value Rate
+                  </p>
+                  <p className='text-xs font-bold text-emerald-600'>
+                    ₹ 1.00 / pt
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* Statement Ledger */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-slate-700">
-                <History className="w-4 h-4 text-red-600" />
-                <h3 className="text-xs font-extrabold uppercase tracking-wider">Points Ledger Statement</h3>
+            <div className='space-y-4'>
+              <div className='flex items-center gap-2 text-slate-700'>
+                <History className='h-4 w-4 text-red-600' />
+                <h3 className='text-xs font-extrabold tracking-wider uppercase'>
+                  Points Ledger Statement
+                </h3>
               </div>
 
               {ledger.length === 0 ? (
-                <div className="bg-white rounded-3xl border border-gray-100 p-8 text-center text-slate-500 shadow-sm">
-                  <p className="text-xs">No points statements found.</p>
-                  <p className="text-[10px] text-slate-400 mt-1">Order coffee to earn your first loyalty points!</p>
+                <div className='rounded-3xl border border-gray-100 bg-white p-8 text-center text-slate-500 shadow-sm'>
+                  <p className='text-xs'>No points statements found.</p>
+                  <p className='mt-1 text-[10px] text-slate-400'>
+                    Order coffee to earn your first loyalty points!
+                  </p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className='space-y-3'>
                   {ledger.map((entry) => (
                     <div
                       key={entry.id}
-                      className="bg-white border border-gray-100 rounded-2xl p-4 flex justify-between items-center hover:border-red-200 shadow-sm transition-all duration-300"
+                      className='flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-300 hover:border-red-200'
                     >
                       <div>
-                        <p className="text-xs font-bold text-slate-800">{entry.description}</p>
-                        <p className="text-[10px] text-slate-500 mt-1 font-semibold">
+                        <p className='text-xs font-bold text-slate-800'>
+                          {entry.description}
+                        </p>
+                        <p className='mt-1 text-[10px] font-semibold text-slate-500'>
                           {formatLedgerDate(entry.createdAt)}
                         </p>
                       </div>
-                      <span className={`text-sm font-extrabold ${entry.points >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {entry.points >= 0 ? `+${entry.points}` : entry.points} pts
+                      <span
+                        className={`text-sm font-extrabold ${entry.points >= 0 ? 'text-emerald-600' : 'text-red-600'}`}
+                      >
+                        {entry.points >= 0 ? `+${entry.points}` : entry.points}{' '}
+                        pts
                       </span>
                     </div>
                   ))}

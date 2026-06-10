@@ -1,13 +1,13 @@
-import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
+import NextAuth from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     CredentialsProvider({
-      name: "Credentials",
+      name: 'Credentials',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -15,19 +15,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/auth/login`, {
-            method: "POST",
-            body: JSON.stringify({
-              email: credentials.email,
-              password: credentials.password
-            }),
-            headers: { "Content-Type": "application/json" }
-          });
+          console.log(
+            `[Admin Login API Request]: URL=${process.env.NEXT_PUBLIC_API_URL}/admin/auth/login, Body=`,
+            { email: credentials.email }
+          );
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/admin/auth/login`,
+            {
+              method: 'POST',
+              body: JSON.stringify({
+                email: credentials.email,
+                password: credentials.password
+              }),
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
 
           const responseData = await res.json();
+          console.log(
+            `[Admin Login API Response]: Status=${res.status}, Body=`,
+            responseData
+          );
 
           if (res.ok && responseData.success && responseData.result) {
-            const { admin, accessToken, refreshToken, token } = responseData.result;
+            const { admin, accessToken, refreshToken, token } =
+              responseData.result;
             // Return user details + backend tokens to be serialized
             return {
               id: admin.id,
@@ -38,10 +50,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               refreshToken: refreshToken || null
             };
           }
-          
+
           return null;
         } catch (error) {
-          console.error("NextAuth authorize error:", error);
+          console.error('NextAuth authorize error:', error);
           return null;
         }
       }
@@ -60,23 +72,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       // If token is not expired, return it
-      if (token.accessTokenExpires && Date.now() < (token.accessTokenExpires as number)) {
+      if (
+        token.accessTokenExpires &&
+        Date.now() < (token.accessTokenExpires as number)
+      ) {
         return token;
       }
 
       // Access token has expired, try to update it using refreshToken
       if (!token.refreshToken) {
-        return { ...token, error: "RefreshAccessTokenError" };
+        return { ...token, error: 'RefreshAccessTokenError' };
       }
 
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/auth/refresh`, {
-          method: "POST",
-          body: JSON.stringify({
-            refreshToken: token.refreshToken
-          }),
-          headers: { "Content-Type": "application/json" }
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/admin/auth/refresh`,
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              refreshToken: token.refreshToken
+            }),
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
 
         const responseData = await res.json();
 
@@ -90,10 +108,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           };
         }
 
-        return { ...token, error: "RefreshAccessTokenError" };
+        return { ...token, error: 'RefreshAccessTokenError' };
       } catch (error) {
-        console.error("NextAuth refresh token error:", error);
-        return { ...token, error: "RefreshAccessTokenError" };
+        console.error('NextAuth refresh token error:', error);
+        return { ...token, error: 'RefreshAccessTokenError' };
       }
     },
     async session({ session, token }) {
@@ -107,9 +125,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }
   },
   pages: {
-    signIn: "/auth/sign-in"
+    signIn: '/auth/sign-in'
   },
   session: {
-    strategy: "jwt"
+    strategy: 'jwt'
   }
 });
