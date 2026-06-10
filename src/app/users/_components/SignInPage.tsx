@@ -294,13 +294,17 @@ export default function SignInPage({ onSuccess }: SignInPageProps) {
                   {/* Slider Background Pill */}
                   <motion.div
                     className='absolute top-1 bottom-1 rounded-xl border border-slate-200/30 bg-white shadow-sm'
-                    layout
                     initial={false}
                     animate={{
                       left: activeTab === 'register' ? '4px' : '50%',
                       right: activeTab === 'register' ? '50%' : '4px'
                     }}
-                    transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 400,
+                      damping: 32,
+                      mass: 0.8
+                    }}
                   />
 
                   <button
@@ -329,18 +333,15 @@ export default function SignInPage({ onSuccess }: SignInPageProps) {
 
                 <form onSubmit={handleSendOtp} className='space-y-4'>
                   {/* Conditionally show name only for Register Mode */}
-                  <AnimatePresence initial={false}>
+                  <AnimatePresence initial={false} mode='sync'>
                     {activeTab === 'register' && (
                       <motion.div
-                        initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                        animate={{
-                          opacity: 1,
-                          height: 'auto',
-                          marginBottom: 16
-                        }}
-                        exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className='overflow-hidden'
+                        key='name-field'
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.18, ease: 'easeOut' }}
+                        className='mb-4'
                       >
                         <label className='mb-1.5 block text-xs font-extrabold text-slate-700'>
                           Full Name

@@ -190,19 +190,35 @@ export default function CustomerLoyalty() {
 
   return (
     <div className='flex min-h-screen flex-col bg-slate-50 pb-24 font-sans text-slate-900'>
-      {/* Header */}
-      <header className='sticky top-0 z-30 flex items-center justify-between bg-white px-4 py-3 shadow-sm'>
-        <div className='flex items-center gap-2 text-red-600'>
-          <Award className='h-5 w-5' />
-          <h1 className='text-xl font-black tracking-tight'>
-            Bean Club Rewards
-          </h1>
+      {/* Header — Glassmorphism */}
+      <header
+        className='sticky top-0 z-30 flex items-center justify-between px-4 py-3.5'
+        style={{
+          background: 'rgba(255,255,255,0.82)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(255,255,255,0.55)',
+          boxShadow: '0 2px 16px rgba(0,0,0,0.06)'
+        }}
+      >
+        <div className='flex items-center gap-2'>
+          <div className='flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 shadow-md shadow-amber-400/30'>
+            <Award className='h-4 w-4 text-white' />
+          </div>
+          <div>
+            <h1 className='text-lg leading-none font-black tracking-tight text-slate-900'>
+              Bean Club Rewards
+            </h1>
+            <p className='mt-0.5 text-[10px] leading-none font-semibold tracking-wider text-amber-500'>
+              LOYALTY PROGRAM
+            </p>
+          </div>
         </div>
         {token && (
           <button
             onClick={() => fetchLoyalty()}
             disabled={loading}
-            className='flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600 transition-all hover:bg-red-50 hover:text-red-600'
+            className='flex items-center gap-1.5 rounded-2xl bg-slate-100/80 px-3 py-1.5 text-xs font-bold text-slate-500 transition-all hover:bg-amber-50 hover:text-amber-600 disabled:opacity-50'
           >
             <Loader2
               className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`}
@@ -223,10 +239,23 @@ export default function CustomerLoyalty() {
         ) : (
           /* Loyalty Card & Statement */
           <div className='space-y-6'>
-            {/* Premium Gold Loyalty Card */}
-            <div className='relative flex aspect-[1.7/1] flex-col justify-between overflow-hidden rounded-3xl border border-amber-400/20 bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 p-6 text-white shadow-xl shadow-amber-600/10'>
-              <div className='absolute top-0 right-0 -mt-10 -mr-10 h-32 w-32 rounded-full bg-white/5 blur-xl'></div>
-              <div className='absolute bottom-0 left-0 -mb-8 -ml-8 h-24 w-24 rounded-full bg-black/10 blur-lg'></div>
+            {/* Premium Gold Loyalty Card with gloss */}
+            <div
+              className='relative flex aspect-[1.7/1] flex-col justify-between overflow-hidden rounded-3xl p-6 text-white shadow-xl'
+              style={{
+                background:
+                  'linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%)',
+                boxShadow:
+                  '0 12px 40px rgba(245,158,11,0.35), 0 4px 16px rgba(180,83,9,0.2)'
+              }}
+            >
+              {/* Decorative orbs */}
+              <div className='pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full bg-white/8 blur-2xl' />
+              <div className='pointer-events-none absolute -bottom-8 -left-8 h-28 w-28 rounded-full bg-black/10 blur-xl' />
+              {/* Gloss sheen */}
+              <div className='pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-b from-white/15 via-transparent to-transparent' />
+              {/* Top shine strip */}
+              <div className='pointer-events-none absolute top-0 right-8 left-8 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent' />
 
               <div className='z-10 flex items-start justify-between'>
                 <div>
@@ -237,27 +266,27 @@ export default function CustomerLoyalty() {
                     {customer?.name}
                   </h3>
                 </div>
-                <div className='rounded-2xl border border-white/10 bg-white/10 p-2.5 backdrop-blur-md'>
+                <div className='rounded-2xl border border-white/15 bg-white/15 p-2.5 backdrop-blur-md'>
                   <Coffee className='h-5 w-5 text-amber-200' />
                 </div>
               </div>
 
-              <div className='z-10 mt-8'>
+              <div className='z-10 mt-6'>
                 <p className='text-[10px] font-bold tracking-wider text-amber-100/70 uppercase'>
                   TOTAL POINTS BALANCE
                 </p>
-                <div className='mt-1 flex items-baseline gap-1'>
-                  <span className='text-4xl font-extrabold tracking-tight'>
+                <div className='mt-1 flex items-baseline gap-1.5'>
+                  <span className='text-5xl font-extrabold tracking-tight'>
                     {balance}
                   </span>
-                  <span className='text-xs font-bold text-amber-200'>PTS</span>
+                  <span className='text-sm font-bold text-amber-200'>PTS</span>
                 </div>
               </div>
             </div>
 
             {/* Quick stats */}
-            <div className='grid grid-cols-2 gap-4'>
-              <div className='flex items-center gap-3 rounded-3xl border border-gray-100 bg-white p-4 shadow-sm'>
+            <div className='grid grid-cols-2 gap-3'>
+              <div className='card-hover flex items-center gap-3 rounded-2xl border border-slate-100/80 bg-white p-4 shadow-sm'>
                 <div className='flex items-center justify-center rounded-xl bg-amber-50 p-2.5 text-amber-600'>
                   <Coins className='h-4 w-4' />
                 </div>
@@ -265,10 +294,12 @@ export default function CustomerLoyalty() {
                   <p className='text-[10px] font-semibold text-slate-400'>
                     Earn Rate
                   </p>
-                  <p className='text-xs font-bold text-slate-700'>1 pt / ₹1</p>
+                  <p className='text-xs font-extrabold text-slate-700'>
+                    1 pt / ₹1
+                  </p>
                 </div>
               </div>
-              <div className='flex items-center gap-3 rounded-3xl border border-gray-100 bg-white p-4 shadow-sm'>
+              <div className='card-hover flex items-center gap-3 rounded-2xl border border-slate-100/80 bg-white p-4 shadow-sm'>
                 <div className='flex items-center justify-center rounded-xl bg-emerald-50 p-2.5 text-emerald-600'>
                   <TrendingUp className='h-4 w-4' />
                 </div>
@@ -276,7 +307,7 @@ export default function CustomerLoyalty() {
                   <p className='text-[10px] font-semibold text-slate-400'>
                     Value Rate
                   </p>
-                  <p className='text-xs font-bold text-emerald-600'>
+                  <p className='text-xs font-extrabold text-emerald-600'>
                     ₹ 1.00 / pt
                   </p>
                 </div>
@@ -304,22 +335,36 @@ export default function CustomerLoyalty() {
                   {ledger.map((entry) => (
                     <div
                       key={entry.id}
-                      className='flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-300 hover:border-red-200'
+                      className='card-hover flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-all duration-200 hover:border-red-200/60'
+                      style={{
+                        borderLeft:
+                          entry.points >= 0
+                            ? '3px solid #10b981'
+                            : '3px solid #ef4444'
+                      }}
                     >
                       <div>
                         <p className='text-xs font-bold text-slate-800'>
                           {entry.description}
                         </p>
-                        <p className='mt-1 text-[10px] font-semibold text-slate-500'>
+                        <p className='mt-1 text-[10px] font-semibold text-slate-400'>
                           {formatLedgerDate(entry.createdAt)}
                         </p>
                       </div>
-                      <span
-                        className={`text-sm font-extrabold ${entry.points >= 0 ? 'text-emerald-600' : 'text-red-600'}`}
-                      >
-                        {entry.points >= 0 ? `+${entry.points}` : entry.points}{' '}
-                        pts
-                      </span>
+                      <div className='flex flex-col items-end gap-0.5'>
+                        <span
+                          className={`text-sm font-extrabold ${
+                            entry.points >= 0
+                              ? 'text-emerald-600'
+                              : 'text-red-600'
+                          }`}
+                        >
+                          {entry.points >= 0
+                            ? `+${entry.points}`
+                            : entry.points}{' '}
+                          pts
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>

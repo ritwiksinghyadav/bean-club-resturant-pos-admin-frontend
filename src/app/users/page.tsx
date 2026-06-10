@@ -428,25 +428,43 @@ export default function CustomerMenu() {
             transition={{ duration: 0.3 }}
             className='flex w-full flex-1 flex-col'
           >
-            {/* Header */}
-            <header className='sticky top-0 z-30 flex items-center justify-between bg-white px-4 py-3 shadow-sm'>
-              <div className='flex items-center gap-2 text-red-600'>
-                <Utensils className='h-6 w-6' />
-                <h1 className='text-xl font-black tracking-tight'>Bean Club</h1>
+            {/* Header — Glassmorphism sticky */}
+            <header
+              className='sticky top-0 z-30 flex items-center justify-between px-4 py-3.5'
+              style={{
+                background: 'rgba(255,255,255,0.82)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                borderBottom: '1px solid rgba(255,255,255,0.55)',
+                boxShadow: '0 2px 16px rgba(0,0,0,0.06)'
+              }}
+            >
+              <div className='flex items-center gap-2'>
+                <div className='flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-red-700 shadow-md shadow-red-500/30'>
+                  <Utensils className='h-4 w-4 text-white' />
+                </div>
+                <div>
+                  <h1 className='text-lg leading-none font-black tracking-tight text-slate-900'>
+                    Bean Club
+                  </h1>
+                  <p className='mt-0.5 text-[10px] leading-none font-semibold tracking-wider text-red-500'>
+                    FRESH BREWS
+                  </p>
+                </div>
               </div>
               <div>
                 {customer ? (
                   <button
                     onClick={() => setIsSettingsOpen(true)}
                     title='Profile Settings'
-                    className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-red-200/50 bg-red-100 text-sm font-bold text-red-600 transition-all hover:bg-red-200 active:scale-95'
+                    className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-red-700 text-sm font-black text-white shadow-md shadow-red-500/30 transition-all hover:shadow-lg hover:shadow-red-500/40 active:scale-95'
                   >
                     {customer.name.charAt(0).toUpperCase()}
                   </button>
                 ) : (
                   <button
                     onClick={() => setIsAuthOpen(true)}
-                    className='text-sm font-semibold text-slate-600 hover:text-red-600'
+                    className='text-sm font-bold text-slate-500 transition-colors hover:text-red-600'
                   >
                     Log in
                   </button>
@@ -455,12 +473,19 @@ export default function CustomerMenu() {
             </header>
 
             {/* Search Bar */}
-            <div className='bg-white px-4 pt-4 pb-2 shadow-sm'>
-              <div className='relative flex items-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 shadow-sm transition-all focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500'>
-                <Search className='mr-2 h-5 w-5 text-red-500' />
+            <div
+              className='px-4 pt-3 pb-2'
+              style={{
+                background: 'rgba(255,255,255,0.7)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)'
+              }}
+            >
+              <div className='relative flex items-center rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-2.5 shadow-sm transition-all focus-within:border-red-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-red-500/20'>
+                <Search className='mr-2.5 h-4 w-4 shrink-0 text-red-400' />
                 <input
                   type='text'
-                  placeholder='Restaurant menu, items...'
+                  placeholder='Search menu, drinks, food...'
                   className='w-full bg-transparent text-sm font-medium text-slate-800 placeholder-slate-400 outline-none'
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -468,35 +493,53 @@ export default function CustomerMenu() {
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className='p-1 text-slate-400 hover:text-slate-600'
+                    className='ml-1 p-0.5 text-slate-400 hover:text-slate-600'
                   >
-                    <X className='h-4 w-4' />
+                    <X className='h-3.5 w-3.5' />
                   </button>
                 )}
               </div>
             </div>
 
             {/* Category Pills */}
-            <div className='no-scrollbar sticky top-[68px] z-20 flex gap-3 overflow-x-auto border-b border-gray-100 bg-white px-4 py-3'>
+            <div
+              className='no-scrollbar sticky top-[68px] z-20 flex gap-2 overflow-x-auto px-4 py-2.5'
+              style={{
+                background: 'rgba(255,255,255,0.75)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                borderBottom: '1px solid rgba(226,232,240,0.6)'
+              }}
+            >
               <button
                 onClick={() => setSelectedCategory('all')}
-                className={`rounded-lg border px-4 py-1.5 text-sm font-semibold whitespace-nowrap transition-all ${
+                className={`shrink-0 rounded-2xl px-4 py-1.5 text-xs font-bold whitespace-nowrap transition-all duration-200 ${
                   selectedCategory === 'all'
-                    ? 'border-red-200 bg-red-50 text-red-600'
-                    : 'border-gray-200 bg-white text-slate-600 hover:bg-gray-50'
+                    ? 'bg-red-600 text-white shadow-md'
+                    : 'bg-slate-100/80 text-slate-500 hover:bg-red-50 hover:text-red-600'
                 }`}
+                style={
+                  selectedCategory === 'all'
+                    ? { boxShadow: '0 3px 12px rgba(220,38,38,0.32)' }
+                    : {}
+                }
               >
-                All
+                All Items
               </button>
               {pillCategories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`rounded-lg border px-4 py-1.5 text-sm font-semibold whitespace-nowrap transition-all ${
+                  className={`shrink-0 rounded-2xl px-4 py-1.5 text-xs font-bold whitespace-nowrap transition-all duration-200 ${
                     selectedCategory === cat.id
-                      ? 'border-red-200 bg-red-50 text-red-600'
-                      : 'border-gray-200 bg-white text-slate-600 hover:bg-gray-50'
+                      ? 'bg-red-600 text-white shadow-md'
+                      : 'bg-slate-100/80 text-slate-500 hover:bg-red-50 hover:text-red-600'
                   }`}
+                  style={
+                    selectedCategory === cat.id
+                      ? { boxShadow: '0 3px 12px rgba(220,38,38,0.32)' }
+                      : {}
+                  }
                 >
                   {cat.name}
                 </button>
@@ -544,27 +587,42 @@ export default function CustomerMenu() {
             <AnimatePresence>
               {cartItemCount > 0 && !isCartOpen && (
                 <motion.div
-                  initial={{ y: 100, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: 100, opacity: 0 }}
-                  transition={{ type: 'spring', bounce: 0.4, duration: 0.6 }}
-                  className='fixed right-4 bottom-24 left-4 z-40 mx-auto max-w-2xl'
+                  initial={{ y: 100, opacity: 0, scale: 0.94 }}
+                  animate={{ y: 0, opacity: 1, scale: 1 }}
+                  exit={{ y: 100, opacity: 0, scale: 0.94 }}
+                  transition={{ type: 'spring', bounce: 0.42, duration: 0.55 }}
+                  className='fixed right-4 bottom-[88px] left-4 z-40 mx-auto max-w-md'
                 >
                   <button
                     onClick={() => setIsCartOpen(true)}
-                    className='flex w-full items-center justify-between rounded-2xl border border-red-500 bg-red-600 p-4 text-white shadow-xl shadow-red-600/40 transition-all active:scale-95'
+                    className='relative flex w-full items-center justify-between overflow-hidden rounded-[22px] p-4 text-white transition-all active:scale-[0.97]'
+                    style={{
+                      background:
+                        'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                      boxShadow:
+                        '0 8px 32px rgba(220,38,38,0.45), 0 2px 8px rgba(220,38,38,0.25)',
+                      border: '1px solid rgba(255,255,255,0.15)'
+                    }}
                   >
-                    <div className='flex flex-col items-start'>
-                      <span className='text-sm font-extrabold tracking-wide'>
-                        {cartItemCount} item{cartItemCount > 1 ? 's' : ''} added
-                      </span>
-                      <span className='mt-0.5 text-xs font-bold text-red-100'>
-                        Subtotal: ₹{cartSubtotal.toFixed(2)}
-                      </span>
+                    {/* Glass shine overlay */}
+                    <div className='pointer-events-none absolute inset-0 rounded-[22px] bg-gradient-to-b from-white/10 to-transparent' />
+                    <div className='relative z-10 flex items-center gap-3'>
+                      <div className='flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-base font-black backdrop-blur-sm'>
+                        {cartItemCount}
+                      </div>
+                      <div className='flex flex-col items-start'>
+                        <span className='text-sm leading-none font-extrabold tracking-wide'>
+                          {cartItemCount} item{cartItemCount > 1 ? 's' : ''} in
+                          cart
+                        </span>
+                        <span className='mt-0.5 text-[11px] leading-none font-bold text-red-100'>
+                          ₹{cartSubtotal.toFixed(2)}
+                        </span>
+                      </div>
                     </div>
-                    <div className='flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-base font-black tracking-wide'>
-                      Next
-                      <ArrowRight className='h-5 w-5' />
+                    <div className='relative z-10 flex items-center gap-1.5 rounded-xl bg-white/20 px-4 py-2 text-sm font-black tracking-wide backdrop-blur-sm'>
+                      View Cart
+                      <ArrowRight className='h-4 w-4' />
                     </div>
                   </button>
                 </motion.div>
