@@ -322,7 +322,7 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
                 name="discountValue"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Discount Value</FormLabel>
+                    <FormLabel>Discount Value {addDiscountType === 'fixed' ? '(₹)' : '(%)'}</FormLabel>
                     <FormControl>
                       <Input type="number" placeholder="50 or 100" {...field} />
                     </FormControl>
@@ -460,7 +460,7 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
                 name="discountValue"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Discount Value</FormLabel>
+                    <FormLabel>Discount Value {editDiscountType === 'fixed' ? '(₹)' : '(%)'}</FormLabel>
                     <FormControl>
                       <Input type="number" placeholder="50 or 100" {...field} />
                     </FormControl>

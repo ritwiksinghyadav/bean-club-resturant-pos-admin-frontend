@@ -13,7 +13,9 @@ import SuccessScreen from './_components/SuccessScreen';
 import AuthModal from './_components/AuthModal';
 import VariantDrawer from './_components/VariantDrawer';
 import ProfileConfirmModal from './_components/ProfileConfirmModal';
+import SettingsDrawer from './_components/SettingsDrawer';
 import { MenuItem, Category, CreatedOrderDetails } from './_components/types';
+import { fetchWithAuth } from '@/lib/api-client';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -33,8 +35,10 @@ export default function CustomerMenu() {
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const clearCart = useCartStore((s) => s.clearCart);
   const storeToken = useCartStore((s) => s.token);
+  const storeRefreshToken = useCartStore((s) => s.refreshToken);
   const storeCustomer = useCartStore((s) => s.customer);
   const setAuth = useCartStore((s) => s.setAuth);
+  const logout = useCartStore((s) => s.logout);
 
   const [token, setToken] = useState<string | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -47,25 +51,26 @@ export default function CustomerMenu() {
     }
   }, [mounted, storeToken, storeCustomer]);
 
-  // Silent re-authentication
-  const silentReauthHelper = async (phoneNumber: string, name?: string): Promise<string | null> => {
+  // Silent re-authentication using refresh token
+  const silentReauthHelper = async (): Promise<string | null> => {
     try {
+      if (!storeRefreshToken) return null;
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-      const res = await fetch(`${apiUrl}/users/auth/login`, {
+      const res = await fetch(`${apiUrl}/users/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber, name }),
+        body: JSON.stringify({ refreshToken: storeRefreshToken }),
       });
       if (res.status >= 400 && res.status < 500) {
-        setAuth(null, null);
+        setAuth(null, null, null);
         setToken(null);
         setCustomer(null);
         return null;
       }
       const data = await res.json();
       if (data.success && data.result) {
-        const { accessToken, user } = data.result;
-        setAuth(accessToken, user);
+        const { accessToken, refreshToken, user } = data.result;
+        setAuth(accessToken, refreshToken, user);
         setToken(accessToken);
         setCustomer(user);
         return accessToken;
@@ -78,11 +83,11 @@ export default function CustomerMenu() {
 
   useEffect(() => {
     if (!mounted) return;
-    if (!storeToken && storeCustomer?.phoneNumber) {
-      silentReauthHelper(storeCustomer.phoneNumber, storeCustomer.name);
+    if (!storeToken && storeRefreshToken) {
+      silentReauthHelper();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, storeToken, storeCustomer]);
+  }, [mounted, storeToken, storeRefreshToken]);
 
   // UI flow
   const [currentScreen, setCurrentScreen] = useState<'menu' | 'checkout' | 'success'>('menu');
@@ -102,6 +107,7 @@ export default function CustomerMenu() {
   const [selectedVariantId, setSelectedVariantId] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   // Auth form
@@ -128,26 +134,11 @@ export default function CustomerMenu() {
   }, []);
 
   // Fetch loyalty balance
-  const fetchLoyaltyBalance = async (authToken: string) => {
+  const fetchLoyaltyBalance = async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-      const res = await fetch(`${apiUrl}/users/loyalty`, {
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
-      if (res.status === 401 && storeCustomer?.phoneNumber) {
-        const newToken = await silentReauthHelper(storeCustomer.phoneNumber, storeCustomer.name);
-        if (newToken) {
-          const retry = await fetch(`${apiUrl}/users/loyalty`, {
-            headers: { Authorization: `Bearer ${newToken}` },
-          });
-          const retryData = await retry.json();
-          if (retryData.success && retryData.result)
-            setLoyaltyBalance(retryData.result.balance || 0);
-        } else {
-          setIsAuthOpen(true);
-        }
-        return;
-      } else if (res.status === 401) {
+      const res = await fetchWithAuth(`${apiUrl}/users/loyalty`);
+      if (res.status === 401) {
         setIsAuthOpen(true);
         return;
       }
@@ -159,12 +150,10 @@ export default function CustomerMenu() {
   };
 
   // Fetch active offers
-  const fetchActiveOffers = async (authToken: string) => {
+  const fetchActiveOffers = async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-      const res = await fetch(`${apiUrl}/users/offers`, {
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
+      const res = await fetchWithAuth(`${apiUrl}/users/offers`);
       const data = await res.json();
       if (data.success && data.result?.offers) {
         setOffers(data.result.offers);
@@ -176,18 +165,23 @@ export default function CustomerMenu() {
 
   useEffect(() => {
     if (token) {
-      fetchLoyaltyBalance(token);
-      fetchActiveOffers(token);
+      fetchLoyaltyBalance();
+      fetchActiveOffers();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
 
 
+  // Filter out 'Others' or 'Other' categories
+  const filteredCategories = menu.filter(
+    (c) => c.name.toLowerCase() !== 'others' && c.name.toLowerCase() !== 'other'
+  );
+
   // Derived data
-  const allItems = menu.flatMap((c) => c.menuItems);
+  const allItems = filteredCategories.flatMap((c) => c.menuItems);
   const filteredItems = (
-    selectedCategory === 'all' ? allItems : menu.find((c) => c.id === selectedCategory)?.menuItems ?? []
+    selectedCategory === 'all' ? allItems : filteredCategories.find((c) => c.id === selectedCategory)?.menuItems ?? []
   ).filter(
     (item) =>
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -217,7 +211,6 @@ export default function CustomerMenu() {
         setAppliedOfferCode(null);
         setAppliedOfferDiscount(0);
         setAppliedOffer(null);
-        toast.error(`Coupon ${appliedOffer.code} removed because subtotal is below ₹${minBill}`);
       } else {
         // Re-calculate percentage discount based on new subtotal
         if (appliedOffer.discountType === 'percentage') {
@@ -235,14 +228,10 @@ export default function CustomerMenu() {
   }, [cartSubtotal, appliedOfferCode, appliedOffer]);
 
   const handleApplyOffer = async (code: string) => {
-    if (!token) throw new Error('Authentication required');
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-    const res = await fetch(`${apiUrl}/users/offers/validate`, {
+    const res = await fetchWithAuth(`${apiUrl}/users/offers/validate`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code, billAmount: cartSubtotal }),
     });
     const data = await res.json();
@@ -250,7 +239,6 @@ export default function CustomerMenu() {
       setAppliedOfferCode(data.result.offer.code);
       setAppliedOfferDiscount(parseFloat(data.result.discountAmount));
       setAppliedOffer(data.result.offer);
-      toast.success(`Coupon ${data.result.offer.code} applied successfully!`);
     } else {
       throw new Error(data.message || 'Failed to apply coupon');
     }
@@ -260,7 +248,6 @@ export default function CustomerMenu() {
     setAppliedOfferCode(null);
     setAppliedOfferDiscount(0);
     setAppliedOffer(null);
-    toast.info('Coupon removed');
   };
 
   if (!mounted) return null;
@@ -300,21 +287,10 @@ export default function CustomerMenu() {
   };
 
   const handleProceedClick = () => {
-    if (token && customer) setShowProfileConfirm(true);
-    else setIsAuthOpen(true);
-  };
-
-  const handleProceedWithSameUser = () => {
-    setShowProfileConfirm(false);
-    if (token) fetchLoyaltyBalance(token);
+    // Proceed directly to checkout since authentication is already verified at layout level
+    fetchLoyaltyBalance();
     setCurrentScreen('checkout');
     setIsCartOpen(false);
-  };
-
-  const handleUseDifferentProfile = () => {
-    setAuth(null, null);
-    setShowProfileConfirm(false);
-    setIsAuthOpen(true);
   };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -330,13 +306,13 @@ export default function CustomerMenu() {
       });
       const data = await res.json();
       if (data.success && data.result) {
-        const { accessToken, user } = data.result;
-        setAuth(accessToken, user);
+        const { accessToken, refreshToken, user } = data.result;
+        setAuth(accessToken, refreshToken, user);
         setToken(accessToken);
         setCustomer(user);
         toast.success(`Verified profile: ${user.name}`);
         setIsAuthOpen(false);
-        fetchLoyaltyBalance(accessToken);
+        fetchLoyaltyBalance();
         setCurrentScreen('checkout');
         setIsCartOpen(false);
       } else {
@@ -350,18 +326,13 @@ export default function CustomerMenu() {
   };
 
   const handlePlaceOrderAndPayCounter = async () => {
-    let currentToken = token;
-    if (!currentToken && storeCustomer?.phoneNumber) {
-      currentToken = await silentReauthHelper(storeCustomer.phoneNumber, storeCustomer.name);
-    }
-    if (!currentToken) { setIsAuthOpen(true); return; }
     setIsPlacingOrder(true);
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
       const pointsRedeemed = redeemPointsChecked ? maxPointsToRedeem : 0;
-      let res = await fetch(`${apiUrl}/users/orders`, {
+      const res = await fetchWithAuth(`${apiUrl}/users/orders`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${currentToken}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           items: cartItems.map((i) => ({ menuItemId: i.menuItemId, variantId: i.variantId || null, quantity: i.quantity })),
           pointsRedeemed,
@@ -369,25 +340,7 @@ export default function CustomerMenu() {
         }),
       });
 
-      if (res.status === 401 && storeCustomer?.phoneNumber) {
-        const newToken = await silentReauthHelper(storeCustomer.phoneNumber, storeCustomer.name);
-        if (newToken) {
-          currentToken = newToken;
-          res = await fetch(`${apiUrl}/users/orders`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${newToken}` },
-            body: JSON.stringify({
-              items: cartItems.map((i) => ({ menuItemId: i.menuItemId, variantId: i.variantId || null, quantity: i.quantity })),
-              pointsRedeemed: 0,
-              offerCode: appliedOfferCode,
-            }),
-          });
-        } else {
-          setIsPlacingOrder(false);
-          setIsAuthOpen(true);
-          return;
-        }
-      } else if (res.status === 401) {
+      if (res.status === 401) {
         setIsPlacingOrder(false);
         setIsAuthOpen(true);
         return;
@@ -430,9 +383,13 @@ export default function CustomerMenu() {
               </div>
               <div>
                 {customer ? (
-                  <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold text-sm">
+                  <button
+                    onClick={() => setIsSettingsOpen(true)}
+                    title="Profile Settings"
+                    className="w-8 h-8 bg-red-100 hover:bg-red-200 active:scale-95 transition-all rounded-full flex items-center justify-center text-red-600 font-bold text-sm cursor-pointer border border-red-200/50"
+                  >
                     {customer.name.charAt(0).toUpperCase()}
-                  </div>
+                  </button>
                 ) : (
                   <button onClick={() => setIsAuthOpen(true)} className="text-sm font-semibold text-slate-600 hover:text-red-600">
                     Log in
@@ -470,7 +427,7 @@ export default function CustomerMenu() {
               >
                 All
               </button>
-              {menu.map((cat) => (
+              {filteredCategories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
@@ -595,27 +552,14 @@ export default function CustomerMenu() {
         onProceed={handleProceedClick}
       />
 
-      {/* ── PROFILE CONFIRM MODAL ───────────────────────── */}
-      {showProfileConfirm && (
-        <ProfileConfirmModal
-          customer={customer}
-          onProceed={handleProceedWithSameUser}
-          onUseDifferent={handleUseDifferentProfile}
-        />
-      )}
+      <SettingsDrawer
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
 
-      {/* ── AUTH MODAL ──────────────────────────────────── */}
-      {isAuthOpen && (
-        <AuthModal
-          authName={authName}
-          authPhone={authPhone}
-          authLoading={authLoading}
-          onClose={() => setIsAuthOpen(false)}
-          onNameChange={setAuthName}
-          onPhoneChange={setAuthPhone}
-          onSubmit={handleAuthSubmit}
-        />
-      )}
+
+
+
 
       {/* ── VARIANT DRAWER ──────────────────────────────── */}
       {selectedItemForVariants && (

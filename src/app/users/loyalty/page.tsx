@@ -16,6 +16,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { fetchWithAuth } from '@/lib/api-client';
 
 interface LedgerEntry {
   id: string;
@@ -26,6 +27,7 @@ interface LedgerEntry {
 
 export default function CustomerLoyalty() {
   const storeToken = useCartStore((state) => state.token);
+  const storeRefreshToken = useCartStore((state) => state.refreshToken);
   const storeCustomer = useCartStore((state) => state.customer);
   const setAuth = useCartStore((state) => state.setAuth);
 
@@ -42,17 +44,18 @@ export default function CustomerLoyalty() {
   const [authPhone, setAuthPhone] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
-  const silentReauthHelper = async (phoneNumber: string, name?: string): Promise<string | null> => {
+  const silentReauthHelper = async (): Promise<string | null> => {
     try {
+      if (!storeRefreshToken) return null;
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-      const res = await fetch(`${apiUrl}/users/auth/login`, {
+      const res = await fetch(`${apiUrl}/users/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber, name }),
+        body: JSON.stringify({ refreshToken: storeRefreshToken }),
       });
 
       if (res.status >= 400 && res.status < 500) {
-        setAuth(null, null);
+        setAuth(null, null, null);
         setToken(null);
         setCustomer(null);
         return null;
@@ -60,8 +63,8 @@ export default function CustomerLoyalty() {
 
       const data = await res.json();
       if (data.success && data.result) {
-        const { accessToken, user } = data.result;
-        setAuth(accessToken, user);
+        const { accessToken, refreshToken, user } = data.result;
+        setAuth(accessToken, refreshToken, user);
         setToken(accessToken);
         setCustomer(user);
         return accessToken;
@@ -73,34 +76,13 @@ export default function CustomerLoyalty() {
     }
   };
 
-  const fetchLoyalty = async (authToken: string) => {
+  const fetchLoyalty = async () => {
     setLoading(true);
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-      const res = await fetch(`${apiUrl}/users/loyalty`, {
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
+      const res = await fetchWithAuth(`${apiUrl}/users/loyalty`);
 
-      if (res.status === 401 && storeCustomer?.phoneNumber) {
-        const newToken = await silentReauthHelper(storeCustomer.phoneNumber, storeCustomer.name);
-        if (newToken) {
-          const retryRes = await fetch(`${apiUrl}/users/loyalty`, {
-            headers: {
-              'Authorization': `Bearer ${newToken}`
-            }
-          });
-          const retryData = await retryRes.json();
-          if (retryData.success && retryData.result) {
-            setBalance(retryData.result.balance || 0);
-            setLedger(retryData.result.ledger || []);
-          }
-        } else {
-          setIsAuthOpen(true);
-        }
-        return;
-      } else if (res.status === 401) {
+      if (res.status === 401) {
         setIsAuthOpen(true);
         return;
       }
@@ -134,14 +116,14 @@ export default function CustomerLoyalty() {
   // Silent re-authentication check on mount
   useEffect(() => {
     if (!mounted) return;
-    if (!storeToken && storeCustomer?.phoneNumber) {
-      silentReauthHelper(storeCustomer.phoneNumber, storeCustomer.name);
+    if (!storeToken && storeRefreshToken) {
+      silentReauthHelper();
     }
-  }, [mounted, storeToken, storeCustomer]);
+  }, [mounted, storeToken, storeRefreshToken]);
 
   useEffect(() => {
     if (token) {
-      fetchLoyalty(token);
+      fetchLoyalty();
     }
   }, [token]);
 
@@ -165,12 +147,11 @@ export default function CustomerLoyalty() {
       const data = await res.json();
 
       if (data.success && data.result) {
-        const { accessToken, user } = data.result;
-        const newToken = accessToken;
-        setAuth(newToken, user);
+        const { accessToken, refreshToken, user } = data.result;
+        setAuth(accessToken, refreshToken, user);
         toast.success(`Welcome, ${user.name}!`);
         setIsAuthOpen(false);
-        fetchLoyalty(newToken);
+        fetchLoyalty();
       } else {
         toast.error(data.message || 'Authentication failed');
       }
@@ -205,7 +186,7 @@ export default function CustomerLoyalty() {
         </div>
         {token && (
           <button
-            onClick={() => fetchLoyalty(token)}
+            onClick={() => fetchLoyalty()}
             disabled={loading}
             className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-red-600 bg-slate-100 hover:bg-red-50 px-3 py-1.5 rounded-xl transition-all"
           >
@@ -217,26 +198,7 @@ export default function CustomerLoyalty() {
 
       {/* Main Panel */}
       <div className="flex-1 px-4 py-4 max-w-2xl mx-auto w-full space-y-6">
-        {!token ? (
-          /* Place Order First CTA Screen */
-          <div className="flex flex-col items-center justify-center py-20 text-center space-y-6 bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
-            <div className="w-16 h-16 rounded-3xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600 shadow-sm">
-              <Lock className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-800">You need to place an order first</h3>
-              <p className="text-xs text-slate-500 mt-2 max-w-[250px] mx-auto leading-relaxed">
-                You need to place an order first to register your profile and see order logs/loyalty points.
-              </p>
-            </div>
-            <Link
-              href="/users"
-              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-red-600/10 active:scale-95 flex items-center justify-center gap-1.5"
-            >
-              Browse Menu & Order
-            </Link>
-          </div>
-        ) : loading && ledger.length === 0 ? (
+        {loading && ledger.length === 0 ? (
           /* Loading States */
           <div className="flex flex-col items-center justify-center py-20 text-slate-500 space-y-3">
             <Loader2 className="w-8 h-8 animate-spin text-red-500" />
@@ -327,77 +289,6 @@ export default function CustomerLoyalty() {
           </div>
         )}
       </div>
-
-      {/* Guest Authentication Modal */}
-      {isAuthOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                <User className="w-5 h-5 text-red-600" />
-                Your Details
-              </h3>
-              <button
-                onClick={() => setIsAuthOpen(false)}
-                className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-slate-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <p className="text-sm text-slate-500 mb-6">
-              Please enter your details to view your loyalty logs.
-            </p>
-
-            <form onSubmit={handleAuthSubmit} className="space-y-4">
-              <div className="relative">
-                <label className="text-xs font-bold text-slate-700 mb-1 block">Full Name</label>
-                <div className="flex items-center border border-gray-300 rounded-xl px-3 py-2.5 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500 transition-all bg-white">
-                  <User className="w-4 h-4 text-slate-400 mr-2" />
-                  <input
-                    type="text"
-                    placeholder="John Doe"
-                    className="w-full outline-none text-slate-800 text-sm placeholder-slate-400 font-medium"
-                    value={authName}
-                    onChange={(e) => setAuthName(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="relative">
-                <label className="text-xs font-bold text-slate-700 mb-1 block">Phone Number</label>
-                <div className="flex items-center border border-gray-300 rounded-xl px-3 py-2.5 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500 transition-all bg-white">
-                  <Phone className="w-4 h-4 text-slate-400 mr-2" />
-                  <input
-                    type="tel"
-                    placeholder="Enter phone number..."
-                    className="w-full outline-none text-slate-800 text-sm placeholder-slate-400 font-medium"
-                    value={authPhone}
-                    onChange={(e) => setAuthPhone(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={authLoading}
-                className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white py-3.5 rounded-xl font-bold text-sm transition-all mt-6 shadow-md shadow-red-600/20 flex justify-center items-center gap-2 active:scale-95"
-              >
-                {authLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  'Confirm & Verify'
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

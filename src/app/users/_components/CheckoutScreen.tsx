@@ -84,9 +84,6 @@ export default function CheckoutScreen({
           <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400">
             Order Customer
           </span>
-          <button onClick={onChangeCustomer} className="text-xs font-bold text-red-600">
-            Change
-          </button>
         </div>
         <div className="flex items-center gap-3">
           <div className="p-3 bg-red-50 rounded-2xl text-red-600">

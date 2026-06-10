@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { ShoppingBag, Plus, Minus, Trash2, ArrowRight, X } from 'lucide-react';
+import { ShoppingBag, Plus, Minus, Trash2, ArrowRight, X, Utensils } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CartItem } from '../cart-store';
+import { toast } from 'sonner';
+import { CartItem, useCartStore } from '../cart-store';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -22,6 +23,19 @@ export default function CartDrawer({
   onUpdateQuantity,
   onProceed,
 }: CartDrawerProps) {
+  const orderType = useCartStore((s) => s.orderType);
+  const setOrderType = useCartStore((s) => s.setOrderType);
+
+  const handleProceedClick = () => {
+    if (!orderType) {
+      toast.error('Select Dining Preference first!', {
+        description: 'Please choose Dine-in or Takeaway to proceed with your order.',
+      });
+      return;
+    }
+    onProceed();
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -105,6 +119,39 @@ export default function CartDrawer({
             {/* Total & Checkout Button */}
             {cartItems.length > 0 && (
               <div className="p-4 bg-white border-t sm:rounded-b-3xl shrink-0 pb-8 sm:pb-4">
+                {/* Dining Preference Selector */}
+                <div className="mb-4">
+                  <span className="text-xs font-extrabold text-slate-700 tracking-wide uppercase mb-2 block">
+                    Dining Preference
+                  </span>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setOrderType('dine_in')}
+                      className={`flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border-2 font-bold text-sm transition-all active:scale-[0.98] cursor-pointer ${
+                        orderType === 'dine_in'
+                          ? 'border-red-600 bg-red-50 text-red-600 shadow-sm'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                      }`}
+                    >
+                      <Utensils className="w-4 h-4" />
+                      Dine-in
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOrderType('takeaway')}
+                      className={`flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border-2 font-bold text-sm transition-all active:scale-[0.98] cursor-pointer ${
+                        orderType === 'takeaway'
+                          ? 'border-red-600 bg-red-50 text-red-600 shadow-sm'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                      }`}
+                    >
+                      <ShoppingBag className="w-4 h-4" />
+                      Takeaway
+                    </button>
+                  </div>
+                </div>
+
                 <div className="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-100">
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-slate-600 font-medium">Item Total</span>
@@ -121,7 +168,7 @@ export default function CartDrawer({
                 </div>
 
                 <button
-                  onClick={onProceed}
+                  onClick={handleProceedClick}
                   className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-bold text-base transition-all shadow-md shadow-red-600/20 flex justify-center items-center gap-2 active:scale-95"
                 >
                   Proceed with the Order

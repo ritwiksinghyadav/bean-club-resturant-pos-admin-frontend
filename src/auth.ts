@@ -27,14 +27,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const responseData = await res.json();
 
           if (res.ok && responseData.success && responseData.result) {
-            const { admin, token } = responseData.result;
-            // Return user details + backend token to be serialized
+            const { admin, accessToken, refreshToken, token } = responseData.result;
+            // Return user details + backend tokens to be serialized
             return {
               id: admin.id,
               name: admin.name,
               email: admin.email,
               role: admin.role,
-              token: token
+              accessToken: accessToken || token,
+              refreshToken: refreshToken || null
             };
           }
           
@@ -51,15 +52,56 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
-        token.accessToken = (user as any).token;
+        token.accessToken = (user as any).accessToken;
+        token.refreshToken = (user as any).refreshToken;
+        // Access tokens expire in 15 minutes, refresh 1 minute early (14 mins)
+        token.accessTokenExpires = Date.now() + 14 * 60 * 1000;
+        return token;
       }
-      return token;
+
+      // If token is not expired, return it
+      if (token.accessTokenExpires && Date.now() < (token.accessTokenExpires as number)) {
+        return token;
+      }
+
+      // Access token has expired, try to update it using refreshToken
+      if (!token.refreshToken) {
+        return { ...token, error: "RefreshAccessTokenError" };
+      }
+
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/auth/refresh`, {
+          method: "POST",
+          body: JSON.stringify({
+            refreshToken: token.refreshToken
+          }),
+          headers: { "Content-Type": "application/json" }
+        });
+
+        const responseData = await res.json();
+
+        if (res.ok && responseData.success && responseData.result) {
+          const { accessToken, refreshToken } = responseData.result;
+          return {
+            ...token,
+            accessToken,
+            refreshToken: refreshToken || token.refreshToken,
+            accessTokenExpires: Date.now() + 14 * 60 * 1000
+          };
+        }
+
+        return { ...token, error: "RefreshAccessTokenError" };
+      } catch (error) {
+        console.error("NextAuth refresh token error:", error);
+        return { ...token, error: "RefreshAccessTokenError" };
+      }
     },
     async session({ session, token }) {
       if (session.user) {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role;
         (session.user as any).accessToken = token.accessToken as string;
+        (session.user as any).error = token.error;
       }
       return session;
     }

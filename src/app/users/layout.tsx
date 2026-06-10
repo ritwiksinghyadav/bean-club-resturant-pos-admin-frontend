@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Coffee, Receipt, Award, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from './cart-store';
+import SignInPage from './_components/SignInPage';
 
 export default function UsersLayout({
   children,
@@ -33,17 +34,22 @@ export default function UsersLayout({
       {/* Mobile-first frame container */}
       <div className="w-full max-w-md bg-white border-x border-slate-200 flex flex-col relative overflow-hidden shadow-xl h-full">
         
-        <main className="flex-1 overflow-y-auto overflow-x-hidden pb-24 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          {children}
-        </main>
+        {mounted && !customer ? (
+          <SignInPage />
+        ) : (
+          <>
+            <main className="flex-1 overflow-y-auto overflow-x-hidden pb-24 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              {children}
+            </main>
 
-        {mounted && customer && (
-          <motion.nav 
-            initial={{ y: 100 }}
-            animate={{ y: 0 }}
-            transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
-            className="absolute bottom-0 left-0 right-0 h-20 bg-white/95 backdrop-blur-lg border-t border-slate-200 flex justify-around items-center px-4 z-40"
-          >
+            {mounted && customer && (
+              <motion.nav 
+                initial={{ y: 100 }}
+                animate={{ y: 0 }}
+                transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                className="absolute bottom-0 left-0 right-0 h-20 bg-white/95 backdrop-blur-lg border-t border-slate-200 flex justify-around items-center px-4 z-40"
+              >
+
             <Link
               href="/users"
               className={`flex flex-col items-center justify-center w-16 h-16 rounded-2xl transition-all duration-300 ${
@@ -81,7 +87,10 @@ export default function UsersLayout({
             </Link>
           </motion.nav>
         )}
+          </>
+        )}
       </div>
     </div>
+
   );
 }

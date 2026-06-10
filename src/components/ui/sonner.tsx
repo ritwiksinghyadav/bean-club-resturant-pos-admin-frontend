@@ -1,15 +1,21 @@
 'use client';
 
 import { useTheme } from 'next-themes';
+import { usePathname } from 'next/navigation';
 import { Toaster as Sonner, ToasterProps } from 'sonner';
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = 'system' } = useTheme();
+  const pathname = usePathname();
+
+  const isUserSection = pathname?.startsWith('/users');
+  const position = isUserSection ? 'top-right' : 'bottom-right';
 
   return (
     <Sonner
       theme={theme as ToasterProps['theme']}
       className='toaster group'
+      position={props.position || position}
       style={
         {
           '--normal-bg': 'var(--popover)',
