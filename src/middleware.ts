@@ -10,9 +10,20 @@ export default auth((req) => {
   const isApiAuthRoute = pathname.startsWith('/api/auth');
   const isPublicRoute = pathname.startsWith('/auth');
 
-  // Determine if it is the users subdomain (starts with 'users.' or contains 'users.localhost')
-  const isUsersSubdomain =
-    host.startsWith('users.') || host.includes('users.localhost');
+  // Determine the application mode from environment variables
+  const appMode = process.env.NEXT_PUBLIC_APP_MODE || process.env.APP_MODE;
+
+  // Determine if it is the users/customer POS flow
+  let isUsersSubdomain = false;
+  if (appMode === 'user') {
+    isUsersSubdomain = true;
+  } else if (appMode === 'admin') {
+    isUsersSubdomain = false;
+  } else {
+    // Fallback to subdomain logic if no explicit environment mode is set
+    isUsersSubdomain =
+      host.startsWith('users.') || host.includes('users.localhost');
+  }
 
   if (isApiAuthRoute) {
     return;
