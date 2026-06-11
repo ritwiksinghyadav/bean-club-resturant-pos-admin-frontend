@@ -27,6 +27,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { OrderTable } from './order-tables';
 import { columns } from './order-tables/columns';
+import CreateOrderDrawer from './create-order-drawer';
+import { Plus } from 'lucide-react';
 
 interface OrderItem {
   id: string;
@@ -42,6 +44,7 @@ export interface Order {
   totalAmount: string;
   tokenNumber: string;
   createdAt: string;
+  type?: string;
   discount?: string;
   offerDiscount?: string;
   pointsRedeemed?: number;
@@ -206,7 +209,7 @@ function OrderDetailDrawer({
               {/* Customer */}
               <div className='bg-muted/20 space-y-2 rounded-xl border p-4'>
                 <p className='text-muted-foreground text-[10px] font-extrabold tracking-wider uppercase'>
-                  Customer
+                  Customer &amp; Service Type
                 </p>
                 <div className='text-foreground flex items-center gap-2 text-sm font-bold'>
                   <User className='text-muted-foreground h-4 w-4' />
@@ -215,6 +218,21 @@ function OrderDetailDrawer({
                 <div className='text-muted-foreground flex items-center gap-2 text-xs font-semibold'>
                   <Phone className='h-3.5 w-3.5' />
                   {order.user?.phoneNumber || 'N/A'}
+                </div>
+                <div className='mt-2 flex items-center justify-between border-t pt-2'>
+                  <span className='text-muted-foreground text-[10px] font-extrabold uppercase'>
+                    Option:
+                  </span>
+                  <Badge
+                    variant='secondary'
+                    className={
+                      order.type === 'dinein'
+                        ? 'border-red-200/60 bg-red-50 font-bold text-red-700'
+                        : 'border-slate-200 bg-slate-100 font-bold text-slate-700'
+                    }
+                  >
+                    {order.type === 'dinein' ? 'Dine In' : 'Takeaway'}
+                  </Badge>
                 </div>
               </div>
 
@@ -440,6 +458,7 @@ export default function OrderClient({ initialData }: OrderClientProps) {
   const [sseConnected, setSseConnected] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
+  const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
 
   const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1));
   const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(10));
@@ -638,6 +657,14 @@ export default function OrderClient({ initialData }: OrderClientProps) {
           </div>
           <Button
             size='sm'
+            onClick={() => setIsCreateOrderOpen(true)}
+            className='flex items-center gap-2 bg-red-600 font-semibold text-white shadow-sm shadow-red-600/10 hover:bg-red-700'
+          >
+            <Plus className='h-3.5 w-3.5' />
+            New Order
+          </Button>
+          <Button
+            size='sm'
             variant='outline'
             onClick={refreshOrders}
             disabled={loading}
@@ -699,6 +726,13 @@ export default function OrderClient({ initialData }: OrderClientProps) {
           setDrawerLoading(false);
         }}
         onUpdateStatus={handleUpdateStatus}
+      />
+
+      <CreateOrderDrawer
+        isOpen={isCreateOrderOpen}
+        onClose={() => setIsCreateOrderOpen(false)}
+        token={token}
+        onOrderCreated={refreshOrders}
       />
     </div>
   );

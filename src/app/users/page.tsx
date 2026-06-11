@@ -372,7 +372,7 @@ export default function CustomerMenu() {
     }
   };
 
-  const handlePlaceOrderAndPayCounter = async () => {
+  const handlePlaceOrderAndPayCounter = async (type: 'dinein' | 'takeaway') => {
     setIsPlacingOrder(true);
     try {
       const apiUrl =
@@ -388,7 +388,8 @@ export default function CustomerMenu() {
             quantity: i.quantity
           })),
           pointsRedeemed,
-          offerCode: appliedOfferCode
+          offerCode: appliedOfferCode,
+          type
         })
       });
 

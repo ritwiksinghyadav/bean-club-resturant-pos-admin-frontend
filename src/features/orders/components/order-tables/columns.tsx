@@ -98,6 +98,26 @@ export const columns: ColumnDef<Order>[] = [
     }
   },
   {
+    accessorKey: 'type',
+    header: 'ORDER TYPE',
+    cell: ({ row }) => {
+      const type = row.original.type || 'takeaway';
+      const isDineIn = type === 'dinein';
+      return (
+        <Badge
+          variant='secondary'
+          className={
+            isDineIn
+              ? 'border-red-200/60 bg-red-50 font-bold text-red-700'
+              : 'border-slate-200 bg-slate-100 font-bold text-slate-700'
+          }
+        >
+          {isDineIn ? 'Dine In' : 'Takeaway'}
+        </Badge>
+      );
+    }
+  },
+  {
     id: 'items',
     header: 'ITEMS',
     cell: ({ row }) => {
