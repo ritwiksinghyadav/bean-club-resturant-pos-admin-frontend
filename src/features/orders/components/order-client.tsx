@@ -447,6 +447,7 @@ export default function OrderClient({ initialData }: OrderClientProps) {
     'status',
     parseAsString.withDefault('pending')
   );
+  const [tokenSearch] = useQueryState('token', parseAsString.withDefault(''));
 
   const fetchSingleOrder = async (orderId: string) => {
     if (!token) return;
@@ -483,8 +484,11 @@ export default function OrderClient({ initialData }: OrderClientProps) {
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
       const statusQuery = activeTab === 'all' ? '' : activeTab;
+      const tokenQueryParam = tokenSearch
+        ? `&token=${encodeURIComponent(tokenSearch)}`
+        : '';
       const res = await fetch(
-        `${apiUrl}/admin/orders?page=${page}&perPage=${perPage}${statusQuery ? `&status=${statusQuery}` : ''}`,
+        `${apiUrl}/admin/orders?page=${page}&perPage=${perPage}${statusQuery ? `&status=${statusQuery}` : ''}${tokenQueryParam}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           cache: 'no-store'
@@ -528,7 +532,7 @@ export default function OrderClient({ initialData }: OrderClientProps) {
   useEffect(() => {
     refreshOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, perPage, activeTab]);
+  }, [page, perPage, activeTab, tokenSearch]);
 
   useEffect(() => {
     if (!token) return;
@@ -578,7 +582,7 @@ export default function OrderClient({ initialData }: OrderClientProps) {
       eventSource.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, page, perPage, activeTab]);
+  }, [token, page, perPage, activeTab, tokenSearch]);
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     if (!token) return;

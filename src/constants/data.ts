@@ -108,6 +108,14 @@ export const navItems: NavItem[] = [
     shortcut: ['l', 's'],
     isActive: false,
     items: []
+  },
+  {
+    title: 'Feedbacks',
+    url: '/dashboard/feedback',
+    icon: 'post',
+    shortcut: ['f', 'b'],
+    isActive: false,
+    items: []
   }
 ];
 
