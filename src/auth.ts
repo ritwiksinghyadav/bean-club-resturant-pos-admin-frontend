@@ -15,21 +15,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         try {
+          // AUTH_API_URL is a server-only env var (no NEXT_PUBLIC_ prefix) so it
+          // works inside the Edge runtime where localhost fetch can fail.
+          const apiUrl =
+            process.env.AUTH_API_URL || process.env.NEXT_PUBLIC_API_URL;
           console.log(
-            `[Admin Login API Request]: URL=${process.env.NEXT_PUBLIC_API_URL}/admin/auth/login, Body=`,
+            `[Admin Login API Request]: URL=${apiUrl}/admin/auth/login, Body=`,
             { email: credentials.email }
           );
-          const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/admin/auth/login`,
-            {
-              method: 'POST',
-              body: JSON.stringify({
-                email: credentials.email,
-                password: credentials.password
-              }),
-              headers: { 'Content-Type': 'application/json' }
-            }
-          );
+          const res = await fetch(`${apiUrl}/admin/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password
+            }),
+            headers: { 'Content-Type': 'application/json' }
+          });
 
           const responseData = await res.json();
           console.log(
@@ -85,16 +86,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/admin/auth/refresh`,
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              refreshToken: token.refreshToken
-            }),
-            headers: { 'Content-Type': 'application/json' }
-          }
-        );
+        const apiUrl =
+          process.env.AUTH_API_URL || process.env.NEXT_PUBLIC_API_URL;
+        const res = await fetch(`${apiUrl}/admin/auth/refresh`, {
+          method: 'POST',
+          body: JSON.stringify({
+            refreshToken: token.refreshToken
+          }),
+          headers: { 'Content-Type': 'application/json' }
+        });
 
         const responseData = await res.json();
 

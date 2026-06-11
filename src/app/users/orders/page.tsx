@@ -452,6 +452,7 @@ export default function CustomerOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [sseConnected, setSseConnected] = useState(false);
 
   const silentReauthHelper = async (): Promise<string | null> => {
     try {
@@ -524,8 +525,47 @@ export default function CustomerOrders() {
   useEffect(() => {
     if (!mounted || !token) return;
     fetchOrders();
-    const interval = setInterval(() => fetchOrders(true), 8000);
-    return () => clearInterval(interval);
+
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+    const eventSource = new EventSource(
+      `${apiUrl}/users/orders/stream?token=${token}`
+    );
+
+    eventSource.addEventListener('connected', () => {
+      setSseConnected(true);
+    });
+
+    eventSource.addEventListener('order_status_changed', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        toast.info(
+          `🔔 Order Status Update: Token #${data.tokenNumber} is now ${data.status.toUpperCase()}`,
+          { duration: 5000 }
+        );
+
+        // Play notification sound
+        try {
+          const audio = new Audio(
+            'https://assets.mixkit.co/active_storage/sfx/911/911-500.wav'
+          );
+          audio.volume = 0.5;
+          audio.play().catch(() => {});
+        } catch {}
+
+        fetchOrders(true);
+      } catch (err) {
+        console.error('Error parsing order status change SSE:', err);
+      }
+    });
+
+    eventSource.onerror = () => {
+      setSseConnected(false);
+    };
+
+    return () => {
+      eventSource.close();
+    };
   }, [token, mounted]);
 
   if (!mounted) return null;
@@ -551,8 +591,12 @@ export default function CustomerOrders() {
             <Receipt className='h-4 w-4 text-white' />
           </div>
           <div>
-            <h1 className='text-lg leading-none font-black tracking-tight text-slate-900'>
+            <h1 className='flex items-center gap-1.5 text-lg leading-none font-black tracking-tight text-slate-900'>
               My Orders
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${sseConnected ? 'animate-pulse bg-green-500' : 'bg-rose-500'}`}
+                title={sseConnected ? 'Live Connected' : 'Disconnected'}
+              />
             </h1>
             <p className='mt-0.5 text-[10px] leading-none font-semibold tracking-wider text-red-500'>
               {activeOrders.length > 0
