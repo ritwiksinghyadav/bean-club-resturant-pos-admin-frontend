@@ -282,3 +282,20 @@
 .soft-bounce:active {
   animation: soft-bounce 0.3s ease;
 }
+
+/* User Portal Typography Enhancements - Increasing small text sizes */
+.user-portal .text-xs {
+  font-size: 0.875rem !important; /* 12px -> 14px (text-sm) */
+}
+.user-portal .text-\[10px\] {
+  font-size: 0.75rem !important; /* 10px -> 12px (text-xs) */
+}
+.user-portal .text-\[11px\] {
+  font-size: 0.8125rem !important; /* 11px -> 13px */
+}
+.user-portal .text-\[9px\] {
+  font-size: 0.725rem !important; /* 9px -> 11.6px */
+}
+.user-portal .text-\[8px\] {
+  font-size: 0.6875rem !important; /* 8px -> 11px */
+}

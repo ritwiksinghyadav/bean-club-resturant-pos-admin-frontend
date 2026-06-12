@@ -53,7 +53,7 @@ export default function UsersLayout({
   ];
 
   return (
-    <div className='flex h-[100dvh] items-stretch justify-center bg-gradient-to-br from-rose-50 via-white to-red-50/30 font-sans text-slate-900 antialiased selection:bg-red-600 selection:text-white'>
+    <div className='user-portal flex h-[100dvh] items-stretch justify-center bg-gradient-to-br from-rose-50 via-white to-red-50/30 font-sans text-slate-900 antialiased selection:bg-red-600 selection:text-white'>
       {/* Mobile-first frame container */}
       <div className='relative flex h-full w-full max-w-md flex-col overflow-hidden border-x border-white/50 bg-white/60 shadow-2xl shadow-black/10 backdrop-blur-sm'>
         {mounted && !customer ? (
