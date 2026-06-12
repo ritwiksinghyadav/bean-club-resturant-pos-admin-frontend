@@ -10,11 +10,17 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { AlertModal } from '@/components/modal/alert-modal';
-import { IconEdit, IconDotsVertical, IconTrash, IconPower } from '@tabler/icons-react';
+import {
+  IconEdit,
+  IconDotsVertical,
+  IconTrash,
+  IconPower
+} from '@tabler/icons-react';
 import { Category } from '../category-client';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { fetchWithAdminAuth } from '@/lib/api-client';
 
 interface CellActionProps {
   data: Category;
@@ -22,7 +28,11 @@ interface CellActionProps {
   onDelete: (id: string) => void;
 }
 
-export const CellAction: React.FC<CellActionProps> = ({ data, onEdit, onDelete }) => {
+export const CellAction: React.FC<CellActionProps> = ({
+  data,
+  onEdit,
+  onDelete
+}) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -37,17 +47,22 @@ export const CellAction: React.FC<CellActionProps> = ({ data, onEdit, onDelete }
 
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/admin/categories/${data.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ isActive: !data.isActive })
-      });
+      const res = await fetchWithAdminAuth(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/admin/categories/${data.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ isActive: !data.isActive })
+        }
+      );
       const resData = await res.json();
       if (res.ok && resData.success) {
-        toast.success(resData.message || `Category ${data.isActive ? 'deactivated' : 'activated'} successfully.`);
+        toast.success(
+          resData.message ||
+            `Category ${data.isActive ? 'deactivated' : 'activated'} successfully.`
+        );
         router.refresh();
       } else {
         toast.error(resData.message || 'Failed to update category status.');
@@ -84,7 +99,8 @@ export const CellAction: React.FC<CellActionProps> = ({ data, onEdit, onDelete }
             <IconEdit className='mr-2 h-4 w-4' /> Update
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onToggleStatus} disabled={loading}>
-            <IconPower className='mr-2 h-4 w-4' /> {data.isActive ? 'Deactivate' : 'Activate'}
+            <IconPower className='mr-2 h-4 w-4' />{' '}
+            {data.isActive ? 'Deactivate' : 'Activate'}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpen(true)}>
             <IconTrash className='mr-2 h-4 w-4' /> Delete

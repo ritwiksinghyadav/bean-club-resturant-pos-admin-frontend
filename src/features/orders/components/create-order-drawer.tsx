@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { fetchWithAdminAuth } from '@/lib/api-client';
 
 interface Variant {
   id: string;
@@ -137,9 +138,7 @@ export default function CreateOrderDrawer({
     try {
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-      const res = await fetch(`${apiUrl}/admin/offers`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetchWithAdminAuth(`${apiUrl}/admin/offers`);
       const data = await res.json();
       if (data.success && data.result?.offers) {
         // Only keep active offers
@@ -166,9 +165,9 @@ export default function CreateOrderDrawer({
     try {
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-      const res = await fetch(`${apiUrl}/admin/users?name=${phoneNumber}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetchWithAdminAuth(
+        `${apiUrl}/admin/users?name=${phoneNumber}`
+      );
       const data = await res.json();
       if (data.success && data.result?.customers) {
         const found = data.result.customers.find(
@@ -358,14 +357,16 @@ export default function CreateOrderDrawer({
         offerCode: appliedOffer?.code || null
       };
 
-      const res = await fetch(`${apiUrl}/admin/orders/create-on-behalf`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      const res = await fetchWithAdminAuth(
+        `${apiUrl}/admin/orders/create-on-behalf`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }
+      );
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success(

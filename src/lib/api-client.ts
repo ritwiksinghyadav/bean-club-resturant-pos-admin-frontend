@@ -1,53 +1,115 @@
-import { useCartStore } from "@/app/users/cart-store";
+import { useCartStore } from '@/app/users/cart-store';
+import { getSession, signOut } from 'next-auth/react';
 
-const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
+const getApiUrl = () =>
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
 
 /**
- * A customized fetch wrapper that appends the client authorization header 
- * and automatically intercepts 401 Unauthorized errors to rotate the 
- * customer's JWT access token using the persisted refresh token.
+ * Helper to clone/append Bearer authorization headers
  */
-export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+function appendAuthHeader(
+  headers: HeadersInit | undefined,
+  token: string
+): Headers {
+  const newHeaders = new Headers(headers || {});
+  newHeaders.set('Authorization', `Bearer ${token}`);
+  return newHeaders;
+}
+
+/**
+ * Customer / User Portal Fetch Wrapper
+ */
+export async function fetchWithUserAuth(
+  url: string,
+  options: RequestInit = {}
+): Promise<Response> {
   const store = useCartStore.getState();
   const token = store.token;
 
-  const headers = new Headers(options.headers || {});
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  // Execute request
+  const headers = appendAuthHeader(options.headers, token || '');
   let response = await fetch(url, { ...options, headers });
 
-  // Handle unauthorized response by attempting a token refresh
   if (response.status === 401 && store.refreshToken) {
     try {
       const refreshRes = await fetch(`${getApiUrl()}/users/auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken: store.refreshToken }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: store.refreshToken })
       });
 
       if (refreshRes.ok) {
         const refreshData = await refreshRes.json();
         if (refreshData.success && refreshData.result) {
-          const { accessToken, refreshToken: newRefreshToken, user } = refreshData.result;
+          const {
+            accessToken,
+            refreshToken: newRefreshToken,
+            user
+          } = refreshData.result;
+          store.setAuth(
+            accessToken,
+            newRefreshToken || store.refreshToken,
+            user
+          );
 
-          // Update Zustand store credentials
-          store.setAuth(accessToken, newRefreshToken || store.refreshToken, user);
-
-          // Retry the original request with the new access token
-          const retryHeaders = new Headers(options.headers || {});
-          retryHeaders.set("Authorization", `Bearer ${accessToken}`);
+          const retryHeaders = appendAuthHeader(options.headers, accessToken);
           response = await fetch(url, { ...options, headers: retryHeaders });
         }
       } else {
-        // Refresh token itself is invalid/expired
         store.logout();
       }
     } catch (err) {
-      console.error("Token auto-refresh failed:", err);
+      console.error('User token auto-refresh failed:', err);
       store.logout();
+    }
+  }
+
+  return response;
+}
+
+// Alias for backwards compatibility
+export const fetchWithAuth = fetchWithUserAuth;
+
+/**
+ * Admin / POS Dashboard Fetch Wrapper (NextAuth integrated)
+ */
+export async function fetchWithAdminAuth(
+  url: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  const session = await getSession();
+  const token = (session?.user as any)?.accessToken;
+
+  // Sign out immediately if we got a refresh error
+  if ((session?.user as any)?.error === 'RefreshAccessTokenError') {
+    signOut({ callbackUrl: '/auth/sign-in' });
+    return new Response(
+      JSON.stringify({ success: false, message: 'Session expired' }),
+      { status: 401 }
+    );
+  }
+
+  const headers = token
+    ? appendAuthHeader(options.headers, token)
+    : new Headers(options.headers);
+  let response = await fetch(url, { ...options, headers });
+
+  if (response.status === 401) {
+    try {
+      // Force getSession() call which contacts next-auth to trigger server rotation
+      const newSession = await getSession();
+      const newToken = (newSession?.user as any)?.accessToken;
+
+      if ((newSession?.user as any)?.error === 'RefreshAccessTokenError') {
+        signOut({ callbackUrl: '/auth/sign-in' });
+        return response;
+      }
+
+      if (newToken && newToken !== token) {
+        const retryHeaders = appendAuthHeader(options.headers, newToken);
+        response = await fetch(url, { ...options, headers: retryHeaders });
+      }
+    } catch (err) {
+      console.error('Admin token auto-refresh failed:', err);
     }
   }
 

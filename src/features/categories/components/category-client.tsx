@@ -4,13 +4,11 @@ import React, { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { fetchWithAdminAuth } from '@/lib/api-client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
-import { 
-  IconPlus, 
-  IconLoader2 
-} from '@tabler/icons-react';
+import { IconPlus, IconLoader2 } from '@tabler/icons-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +38,8 @@ import { Separator } from '@/components/ui/separator';
 import { CategoryTable } from './category-tables';
 import { columns } from './category-tables/columns';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
 
 export type Category = {
   id: string;
@@ -64,7 +63,10 @@ interface CategoryClientProps {
   totalItems: number;
 }
 
-export default function CategoryClient({ categories: initialCategories, totalItems }: CategoryClientProps) {
+export default function CategoryClient({
+  categories: initialCategories,
+  totalItems
+}: CategoryClientProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const token = (session?.user as any)?.accessToken;
@@ -73,7 +75,9 @@ export default function CategoryClient({ categories: initialCategories, totalIte
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   React.useEffect(() => {
@@ -109,11 +113,10 @@ export default function CategoryClient({ categories: initialCategories, totalIte
       const payload: any = { name: values.name };
       if (values.description) payload.description = values.description;
 
-      const res = await fetch(`${API_URL}/admin/categories`, {
+      const res = await fetchWithAdminAuth(`${API_URL}/admin/categories`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
       });
@@ -157,20 +160,24 @@ export default function CategoryClient({ categories: initialCategories, totalIte
         isActive: values.isActive
       };
 
-      const res = await fetch(`${API_URL}/admin/categories/${editingCategory.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      const res = await fetchWithAdminAuth(
+        `${API_URL}/admin/categories/${editingCategory.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }
+      );
 
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success(data.message || 'Category updated successfully.');
         setCategories((prev) =>
-          prev.map((cat) => (cat.id === editingCategory.id ? data.result.category : cat))
+          prev.map((cat) =>
+            cat.id === editingCategory.id ? data.result.category : cat
+          )
         );
         setIsEditOpen(false);
         setEditingCategory(null);
@@ -191,17 +198,19 @@ export default function CategoryClient({ categories: initialCategories, totalIte
 
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/admin/categories/${deletingCategoryId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`
+      const res = await fetchWithAdminAuth(
+        `${API_URL}/admin/categories/${deletingCategoryId}`,
+        {
+          method: 'DELETE'
         }
-      });
+      );
 
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success(data.message || 'Category deleted successfully.');
-        setCategories((prev) => prev.filter((cat) => cat.id !== deletingCategoryId));
+        setCategories((prev) =>
+          prev.filter((cat) => cat.id !== deletingCategoryId)
+        );
         setDeletingCategoryId(null);
         router.refresh();
       } else {
@@ -216,24 +225,24 @@ export default function CategoryClient({ categories: initialCategories, totalIte
   };
 
   return (
-    <div className="flex flex-1 flex-col space-y-4">
-      <div className="flex items-center justify-between">
+    <div className='flex flex-1 flex-col space-y-4'>
+      <div className='flex items-center justify-between'>
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Categories</h2>
-          <p className="text-muted-foreground text-sm">
+          <h2 className='text-3xl font-bold tracking-tight'>Categories</h2>
+          <p className='text-muted-foreground text-sm'>
             Manage food and beverage categories for your menu items.
           </p>
         </div>
-        <Button 
+        <Button
           onClick={() => setIsAddOpen(true)}
-          className="shadow-md hover:shadow-lg active:scale-95 transition-all duration-300 text-xs md:text-sm"
+          className='text-xs shadow-md transition-all duration-300 hover:shadow-lg active:scale-95 md:text-sm'
         >
-          <IconPlus className="mr-2 h-4 w-4" /> Add Category
+          <IconPlus className='mr-2 h-4 w-4' /> Add Category
         </Button>
       </div>
       <Separator />
 
-      <CategoryTable 
+      <CategoryTable
         data={categories}
         totalItems={totalItems}
         columns={columns}
@@ -243,8 +252,8 @@ export default function CategoryClient({ categories: initialCategories, totalIte
 
       {/* Add Category Modal */}
       <Modal
-        title="Add Category"
-        description="Create a new food or beverage category."
+        title='Add Category'
+        description='Create a new food or beverage category.'
         isOpen={isAddOpen}
         onClose={() => {
           setIsAddOpen(false);
@@ -252,15 +261,18 @@ export default function CategoryClient({ categories: initialCategories, totalIte
         }}
       >
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleAddSubmit)} className="space-y-4 pt-2">
+          <form
+            onSubmit={form.handleSubmit(handleAddSubmit)}
+            className='space-y-4 pt-2'
+          >
             <FormField
               control={form.control}
-              name="name"
+              name='name'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Specialty Lattes" {...field} />
+                    <Input placeholder='e.g. Specialty Lattes' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -268,21 +280,26 @@ export default function CategoryClient({ categories: initialCategories, totalIte
             />
             <FormField
               control={form.control}
-              name="description"
+              name='description'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Describe the category..." className="resize-none h-20" {...field} value={field.value ?? ''} />
+                    <Textarea
+                      placeholder='Describe the category...'
+                      className='h-20 resize-none'
+                      {...field}
+                      value={field.value ?? ''}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className='flex justify-end space-x-2 pt-4'>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={() => {
                   setIsAddOpen(false);
                   form.reset();
@@ -291,12 +308,16 @@ export default function CategoryClient({ categories: initialCategories, totalIte
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type='submit'
                 disabled={isLoading}
-                className="min-w-[80px]"
+                className='min-w-[80px]'
               >
-                {isLoading ? <IconLoader2 className="h-4 w-4 animate-spin" /> : 'Create'}
+                {isLoading ? (
+                  <IconLoader2 className='h-4 w-4 animate-spin' />
+                ) : (
+                  'Create'
+                )}
               </Button>
             </div>
           </form>
@@ -305,8 +326,8 @@ export default function CategoryClient({ categories: initialCategories, totalIte
 
       {/* Edit Category Modal */}
       <Modal
-        title="Edit Category"
-        description="Update category details."
+        title='Edit Category'
+        description='Update category details.'
         isOpen={isEditOpen}
         onClose={() => {
           setIsEditOpen(false);
@@ -314,15 +335,18 @@ export default function CategoryClient({ categories: initialCategories, totalIte
         }}
       >
         <Form {...editForm}>
-          <form onSubmit={editForm.handleSubmit(handleEditSubmit)} className="space-y-4 pt-2">
+          <form
+            onSubmit={editForm.handleSubmit(handleEditSubmit)}
+            className='space-y-4 pt-2'
+          >
             <FormField
               control={editForm.control}
-              name="name"
+              name='name'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Specialty Lattes" {...field} />
+                    <Input placeholder='e.g. Specialty Lattes' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -330,12 +354,17 @@ export default function CategoryClient({ categories: initialCategories, totalIte
             />
             <FormField
               control={editForm.control}
-              name="description"
+              name='description'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Describe the category..." className="resize-none h-20" {...field} value={field.value ?? ''} />
+                    <Textarea
+                      placeholder='Describe the category...'
+                      className='h-20 resize-none'
+                      {...field}
+                      value={field.value ?? ''}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -343,12 +372,12 @@ export default function CategoryClient({ categories: initialCategories, totalIte
             />
             <FormField
               control={editForm.control}
-              name="isActive"
+              name='isActive'
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-muted/20">
-                  <div className="space-y-0.5">
+                <FormItem className='bg-muted/20 flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
+                  <div className='space-y-0.5'>
                     <FormLabel>Active Status</FormLabel>
-                    <div className="text-[12px] text-muted-foreground">
+                    <div className='text-muted-foreground text-[12px]'>
                       Whether this category is displayed on the active menu.
                     </div>
                   </div>
@@ -361,10 +390,10 @@ export default function CategoryClient({ categories: initialCategories, totalIte
                 </FormItem>
               )}
             />
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className='flex justify-end space-x-2 pt-4'>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={() => {
                   setIsEditOpen(false);
                   setEditingCategory(null);
@@ -373,12 +402,16 @@ export default function CategoryClient({ categories: initialCategories, totalIte
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type='submit'
                 disabled={isLoading}
-                className="min-w-[80px]"
+                className='min-w-[80px]'
               >
-                {isLoading ? <IconLoader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+                {isLoading ? (
+                  <IconLoader2 className='h-4 w-4 animate-spin' />
+                ) : (
+                  'Save'
+                )}
               </Button>
             </div>
           </form>
@@ -386,25 +419,35 @@ export default function CategoryClient({ categories: initialCategories, totalIte
       </Modal>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deletingCategoryId} onOpenChange={(open) => !open && setDeletingCategoryId(null)}>
+      <AlertDialog
+        open={!!deletingCategoryId}
+        onOpenChange={(open) => !open && setDeletingCategoryId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-destructive">Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle className='text-destructive'>
+              Are you absolutely sure?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. Removing this category will set the category to null for all associated menu items.
+              This action cannot be undone. Removing this category will set the
+              category to null for all associated menu items.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
                 handleDeleteConfirm();
               }}
               disabled={isLoading}
-              className="bg-rose-600 hover:bg-rose-700 text-white"
+              className='bg-rose-600 text-white hover:bg-rose-700'
             >
-              {isLoading ? <IconLoader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
+              {isLoading ? (
+                <IconLoader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                'Delete'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

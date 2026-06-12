@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { OrderTable } from './order-tables';
+import { fetchWithAdminAuth } from '@/lib/api-client';
 import { columns } from './order-tables/columns';
 import CreateOrderDrawer from './create-order-drawer';
 import { Plus } from 'lucide-react';
@@ -478,9 +479,7 @@ export default function OrderClient({ initialData }: OrderClientProps) {
     try {
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-      const res = await fetch(`${apiUrl}/admin/orders/${orderId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetchWithAdminAuth(`${apiUrl}/admin/orders/${orderId}`);
       const data = await res.json();
       if (data.success && data.result?.order) {
         setSelectedOrder(data.result.order);
@@ -506,10 +505,9 @@ export default function OrderClient({ initialData }: OrderClientProps) {
       const tokenQueryParam = tokenSearch
         ? `&token=${encodeURIComponent(tokenSearch)}`
         : '';
-      const res = await fetch(
+      const res = await fetchWithAdminAuth(
         `${apiUrl}/admin/orders?page=${page}&perPage=${perPage}${statusQuery ? `&status=${statusQuery}` : ''}${tokenQueryParam}`,
         {
-          headers: { Authorization: `Bearer ${token}` },
           cache: 'no-store'
         }
       );
@@ -608,14 +606,16 @@ export default function OrderClient({ initialData }: OrderClientProps) {
     try {
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-      const res = await fetch(`${apiUrl}/admin/orders/${orderId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
+      const res = await fetchWithAdminAuth(
+        `${apiUrl}/admin/orders/${orderId}/status`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: newStatus })
+        }
+      );
       const data = await res.json();
       if (data.success) {
         toast.success(`Order status updated to ${newStatus}`);

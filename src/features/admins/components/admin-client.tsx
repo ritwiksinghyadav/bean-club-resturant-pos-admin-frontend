@@ -3,14 +3,12 @@
 import React, { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { fetchWithAdminAuth } from '@/lib/api-client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
-import { 
-  IconPlus, 
-  IconLoader2 
-} from '@tabler/icons-react';
+import { IconPlus, IconLoader2 } from '@tabler/icons-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,7 +44,8 @@ import { Separator } from '@/components/ui/separator';
 import { AdminTable } from './admin-tables';
 import { columns } from './admin-tables/columns';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
 
 export type Role = {
   id: string;
@@ -93,7 +92,11 @@ interface AdminClientProps {
   totalItems: number;
 }
 
-export default function AdminClient({ admins: initialAdmins, roles, totalItems }: AdminClientProps) {
+export default function AdminClient({
+  admins: initialAdmins,
+  roles,
+  totalItems
+}: AdminClientProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const token = (session?.user as any)?.accessToken;
@@ -139,11 +142,10 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
 
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/admin/admins`, {
+      const res = await fetchWithAdminAuth(`${API_URL}/admin/admins`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(values)
       });
@@ -194,25 +196,29 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
         roleId: values.roleId,
         isActive: values.isActive
       };
-      
+
       if (values.password && values.password.trim() !== '') {
         payload.password = values.password;
       }
 
-      const res = await fetch(`${API_URL}/admin/admins/${editingAdmin.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      const res = await fetchWithAdminAuth(
+        `${API_URL}/admin/admins/${editingAdmin.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }
+      );
 
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success(data.message || 'Admin account updated successfully.');
         setAdmins((prev) =>
-          prev.map((adm) => (adm.id === editingAdmin.id ? data.result.admin : adm))
+          prev.map((adm) =>
+            adm.id === editingAdmin.id ? data.result.admin : adm
+          )
         );
         setIsEditOpen(false);
         setEditingAdmin(null);
@@ -239,12 +245,12 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
 
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/admin/admins/${deletingAdminId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`
+      const res = await fetchWithAdminAuth(
+        `${API_URL}/admin/admins/${deletingAdminId}`,
+        {
+          method: 'DELETE'
         }
-      });
+      );
 
       const data = await res.json();
       if (res.ok && data.success) {
@@ -264,24 +270,26 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
   };
 
   return (
-    <div className="flex flex-1 flex-col space-y-4">
-      <div className="flex items-center justify-between">
+    <div className='flex flex-1 flex-col space-y-4'>
+      <div className='flex items-center justify-between'>
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Admin Management</h2>
-          <p className="text-muted-foreground text-sm">
+          <h2 className='text-3xl font-bold tracking-tight'>
+            Admin Management
+          </h2>
+          <p className='text-muted-foreground text-sm'>
             Add, update roles, toggle access status, and delete administrators.
           </p>
         </div>
-        <Button 
+        <Button
           onClick={() => setIsAddOpen(true)}
-          className="shadow-md hover:shadow-lg active:scale-95 transition-all duration-300 text-xs md:text-sm"
+          className='text-xs shadow-md transition-all duration-300 hover:shadow-lg active:scale-95 md:text-sm'
         >
-          <IconPlus className="mr-2 h-4 w-4" /> Add Admin
+          <IconPlus className='mr-2 h-4 w-4' /> Add Admin
         </Button>
       </div>
       <Separator />
 
-      <AdminTable 
+      <AdminTable
         data={admins}
         totalItems={totalItems}
         columns={columns}
@@ -291,8 +299,8 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
 
       {/* Add Admin Modal */}
       <Modal
-        title="Add Administrator"
-        description="Register a new admin, kitchen-staff, or superadmin user."
+        title='Add Administrator'
+        description='Register a new admin, kitchen-staff, or superadmin user.'
         isOpen={isAddOpen}
         onClose={() => {
           setIsAddOpen(false);
@@ -300,15 +308,18 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
         }}
       >
         <Form {...addForm}>
-          <form onSubmit={addForm.handleSubmit(handleAddSubmit)} className="space-y-4 pt-2">
+          <form
+            onSubmit={addForm.handleSubmit(handleAddSubmit)}
+            className='space-y-4 pt-2'
+          >
             <FormField
               control={addForm.control}
-              name="name"
+              name='name'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. John Doe" {...field} />
+                    <Input placeholder='e.g. John Doe' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -316,12 +327,16 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
             />
             <FormField
               control={addForm.control}
-              name="email"
+              name='email'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Email Address</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="e.g. john@beanclub.com" {...field} />
+                    <Input
+                      type='email'
+                      placeholder='e.g. john@beanclub.com'
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -329,12 +344,16 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
             />
             <FormField
               control={addForm.control}
-              name="password"
+              name='password'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="At least 6 characters" {...field} />
+                    <Input
+                      type='password'
+                      placeholder='At least 6 characters'
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -342,22 +361,23 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
             />
             <FormField
               control={addForm.control}
-              name="roleId"
+              name='roleId'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>System Role</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Assign a role" />
+                        <SelectValue placeholder='Assign a role' />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {roles.map((role) => (
-                        <SelectItem key={role.id} value={role.id} className="capitalize">
+                        <SelectItem
+                          key={role.id}
+                          value={role.id}
+                          className='capitalize'
+                        >
                           {role.name}
                         </SelectItem>
                       ))}
@@ -367,10 +387,10 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
                 </FormItem>
               )}
             />
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className='flex justify-end space-x-2 pt-4'>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={() => {
                   setIsAddOpen(false);
                   addForm.reset();
@@ -379,12 +399,16 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type='submit'
                 disabled={isLoading}
-                className="min-w-[80px]"
+                className='min-w-[80px]'
               >
-                {isLoading ? <IconLoader2 className="h-4 w-4 animate-spin" /> : 'Create'}
+                {isLoading ? (
+                  <IconLoader2 className='h-4 w-4 animate-spin' />
+                ) : (
+                  'Create'
+                )}
               </Button>
             </div>
           </form>
@@ -393,8 +417,8 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
 
       {/* Edit Admin Modal */}
       <Modal
-        title="Edit Administrator"
-        description="Update account details and role classifications."
+        title='Edit Administrator'
+        description='Update account details and role classifications.'
         isOpen={isEditOpen}
         onClose={() => {
           setIsEditOpen(false);
@@ -402,15 +426,18 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
         }}
       >
         <Form {...editForm}>
-          <form onSubmit={editForm.handleSubmit(handleEditSubmit)} className="space-y-4 pt-2">
+          <form
+            onSubmit={editForm.handleSubmit(handleEditSubmit)}
+            className='space-y-4 pt-2'
+          >
             <FormField
               control={editForm.control}
-              name="name"
+              name='name'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. John Doe" {...field} />
+                    <Input placeholder='e.g. John Doe' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -418,12 +445,16 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
             />
             <FormField
               control={editForm.control}
-              name="email"
+              name='email'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Email Address</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="e.g. john@beanclub.com" {...field} />
+                    <Input
+                      type='email'
+                      placeholder='e.g. john@beanclub.com'
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -431,12 +462,16 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
             />
             <FormField
               control={editForm.control}
-              name="password"
+              name='password'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>New Password (Optional)</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Leave blank to keep current password" {...field} />
+                    <Input
+                      type='password'
+                      placeholder='Leave blank to keep current password'
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -444,22 +479,23 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
             />
             <FormField
               control={editForm.control}
-              name="roleId"
+              name='roleId'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>System Role</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Assign a role" />
+                        <SelectValue placeholder='Assign a role' />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {roles.map((role) => (
-                        <SelectItem key={role.id} value={role.id} className="capitalize">
+                        <SelectItem
+                          key={role.id}
+                          value={role.id}
+                          className='capitalize'
+                        >
                           {role.name}
                         </SelectItem>
                       ))}
@@ -471,12 +507,12 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
             />
             <FormField
               control={editForm.control}
-              name="isActive"
+              name='isActive'
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-muted/20">
-                  <div className="space-y-0.5">
+                <FormItem className='bg-muted/20 flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
+                  <div className='space-y-0.5'>
                     <FormLabel>Access Active Status</FormLabel>
-                    <div className="text-[12px] text-muted-foreground">
+                    <div className='text-muted-foreground text-[12px]'>
                       Enable or disable access to the POS dashboards.
                     </div>
                   </div>
@@ -490,10 +526,10 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
                 </FormItem>
               )}
             />
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className='flex justify-end space-x-2 pt-4'>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={() => {
                   setIsEditOpen(false);
                   setEditingAdmin(null);
@@ -502,12 +538,16 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type='submit'
                 disabled={isLoading}
-                className="min-w-[80px]"
+                className='min-w-[80px]'
               >
-                {isLoading ? <IconLoader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+                {isLoading ? (
+                  <IconLoader2 className='h-4 w-4 animate-spin' />
+                ) : (
+                  'Save'
+                )}
               </Button>
             </div>
           </form>
@@ -515,25 +555,35 @@ export default function AdminClient({ admins: initialAdmins, roles, totalItems }
       </Modal>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deletingAdminId} onOpenChange={(open) => !open && setDeletingAdminId(null)}>
+      <AlertDialog
+        open={!!deletingAdminId}
+        onOpenChange={(open) => !open && setDeletingAdminId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-destructive">Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle className='text-destructive'>
+              Are you absolutely sure?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. Removing this administrator will permanently deactivate and delete their account.
+              This action cannot be undone. Removing this administrator will
+              permanently deactivate and delete their account.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
                 handleDeleteConfirm();
               }}
               disabled={isLoading}
-              className="bg-rose-600 hover:bg-rose-700 text-white"
+              className='bg-rose-600 text-white hover:bg-rose-700'
             >
-              {isLoading ? <IconLoader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
+              {isLoading ? (
+                <IconLoader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                'Delete'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

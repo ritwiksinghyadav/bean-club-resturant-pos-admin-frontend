@@ -2,6 +2,7 @@
 import React from 'react';
 import { ActiveThemeProvider } from '../active-theme';
 import { SessionProvider } from 'next-auth/react';
+import AuthManager from './auth-manager';
 
 export default function Providers({
   activeThemeValue,
@@ -13,6 +14,7 @@ export default function Providers({
   return (
     <>
       <SessionProvider>
+        <AuthManager />
         <ActiveThemeProvider initialTheme={activeThemeValue}>
           {children}
         </ActiveThemeProvider>

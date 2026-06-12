@@ -4,13 +4,11 @@ import React, { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { fetchWithAdminAuth } from '@/lib/api-client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
-import { 
-  IconPlus, 
-  IconLoader2 
-} from '@tabler/icons-react';
+import { IconPlus, IconLoader2 } from '@tabler/icons-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,7 +37,8 @@ import { Separator } from '@/components/ui/separator';
 import { TagTable } from './tag-tables';
 import { columns } from './tag-tables/columns';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
 
 export type Tag = {
   id: string;
@@ -61,7 +60,10 @@ interface TagClientProps {
   totalItems: number;
 }
 
-export default function TagClient({ tags: initialTags, totalItems }: TagClientProps) {
+export default function TagClient({
+  tags: initialTags,
+  totalItems
+}: TagClientProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const token = (session?.user as any)?.accessToken;
@@ -104,11 +106,10 @@ export default function TagClient({ tags: initialTags, totalItems }: TagClientPr
       const payload: any = { name: values.name };
       if (values.description) payload.description = values.description;
 
-      const res = await fetch(`${API_URL}/admin/tags`, {
+      const res = await fetchWithAdminAuth(`${API_URL}/admin/tags`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
       });
@@ -150,14 +151,16 @@ export default function TagClient({ tags: initialTags, totalItems }: TagClientPr
         description: values.description || null
       };
 
-      const res = await fetch(`${API_URL}/admin/tags/${editingTag.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      const res = await fetchWithAdminAuth(
+        `${API_URL}/admin/tags/${editingTag.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }
+      );
 
       const data = await res.json();
       if (res.ok && data.success) {
@@ -184,12 +187,12 @@ export default function TagClient({ tags: initialTags, totalItems }: TagClientPr
 
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/admin/tags/${deletingTagId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`
+      const res = await fetchWithAdminAuth(
+        `${API_URL}/admin/tags/${deletingTagId}`,
+        {
+          method: 'DELETE'
         }
-      });
+      );
 
       const data = await res.json();
       if (res.ok && data.success) {
@@ -209,24 +212,24 @@ export default function TagClient({ tags: initialTags, totalItems }: TagClientPr
   };
 
   return (
-    <div className="flex flex-1 flex-col space-y-4">
-      <div className="flex items-center justify-between">
+    <div className='flex flex-1 flex-col space-y-4'>
+      <div className='flex items-center justify-between'>
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Tags</h2>
-          <p className="text-muted-foreground text-sm">
+          <h2 className='text-3xl font-bold tracking-tight'>Tags</h2>
+          <p className='text-muted-foreground text-sm'>
             Manage tags to label and categorize menu items.
           </p>
         </div>
-        <Button 
+        <Button
           onClick={() => setIsAddOpen(true)}
-          className="shadow-md hover:shadow-lg active:scale-95 transition-all duration-300 text-xs md:text-sm"
+          className='text-xs shadow-md transition-all duration-300 hover:shadow-lg active:scale-95 md:text-sm'
         >
-          <IconPlus className="mr-2 h-4 w-4" /> Add Tag
+          <IconPlus className='mr-2 h-4 w-4' /> Add Tag
         </Button>
       </div>
       <Separator />
 
-      <TagTable 
+      <TagTable
         data={tags}
         totalItems={totalItems}
         columns={columns}
@@ -236,8 +239,8 @@ export default function TagClient({ tags: initialTags, totalItems }: TagClientPr
 
       {/* Add Tag Modal */}
       <Modal
-        title="Add Tag"
-        description="Create a new tag for menu items."
+        title='Add Tag'
+        description='Create a new tag for menu items.'
         isOpen={isAddOpen}
         onClose={() => {
           setIsAddOpen(false);
@@ -245,15 +248,18 @@ export default function TagClient({ tags: initialTags, totalItems }: TagClientPr
         }}
       >
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleAddSubmit)} className="space-y-4 pt-2">
+          <form
+            onSubmit={form.handleSubmit(handleAddSubmit)}
+            className='space-y-4 pt-2'
+          >
             <FormField
               control={form.control}
-              name="name"
+              name='name'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tag Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Spicy / Hot" {...field} />
+                    <Input placeholder='e.g. Spicy / Hot' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -261,21 +267,26 @@ export default function TagClient({ tags: initialTags, totalItems }: TagClientPr
             />
             <FormField
               control={form.control}
-              name="description"
+              name='description'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Describe the tag..." className="resize-none h-20" {...field} value={field.value ?? ''} />
+                    <Textarea
+                      placeholder='Describe the tag...'
+                      className='h-20 resize-none'
+                      {...field}
+                      value={field.value ?? ''}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className='flex justify-end space-x-2 pt-4'>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={() => {
                   setIsAddOpen(false);
                   form.reset();
@@ -284,12 +295,16 @@ export default function TagClient({ tags: initialTags, totalItems }: TagClientPr
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type='submit'
                 disabled={isLoading}
-                className="min-w-[80px]"
+                className='min-w-[80px]'
               >
-                {isLoading ? <IconLoader2 className="h-4 w-4 animate-spin" /> : 'Create'}
+                {isLoading ? (
+                  <IconLoader2 className='h-4 w-4 animate-spin' />
+                ) : (
+                  'Create'
+                )}
               </Button>
             </div>
           </form>
@@ -298,8 +313,8 @@ export default function TagClient({ tags: initialTags, totalItems }: TagClientPr
 
       {/* Edit Tag Modal */}
       <Modal
-        title="Edit Tag"
-        description="Update tag details."
+        title='Edit Tag'
+        description='Update tag details.'
         isOpen={isEditOpen}
         onClose={() => {
           setIsEditOpen(false);
@@ -307,15 +322,18 @@ export default function TagClient({ tags: initialTags, totalItems }: TagClientPr
         }}
       >
         <Form {...editForm}>
-          <form onSubmit={editForm.handleSubmit(handleEditSubmit)} className="space-y-4 pt-2">
+          <form
+            onSubmit={editForm.handleSubmit(handleEditSubmit)}
+            className='space-y-4 pt-2'
+          >
             <FormField
               control={editForm.control}
-              name="name"
+              name='name'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tag Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Spicy / Hot" {...field} />
+                    <Input placeholder='e.g. Spicy / Hot' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -323,21 +341,26 @@ export default function TagClient({ tags: initialTags, totalItems }: TagClientPr
             />
             <FormField
               control={editForm.control}
-              name="description"
+              name='description'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Describe the tag..." className="resize-none h-20" {...field} value={field.value ?? ''} />
+                    <Textarea
+                      placeholder='Describe the tag...'
+                      className='h-20 resize-none'
+                      {...field}
+                      value={field.value ?? ''}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className='flex justify-end space-x-2 pt-4'>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={() => {
                   setIsEditOpen(false);
                   setEditingTag(null);
@@ -346,12 +369,16 @@ export default function TagClient({ tags: initialTags, totalItems }: TagClientPr
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type='submit'
                 disabled={isLoading}
-                className="min-w-[80px]"
+                className='min-w-[80px]'
               >
-                {isLoading ? <IconLoader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+                {isLoading ? (
+                  <IconLoader2 className='h-4 w-4 animate-spin' />
+                ) : (
+                  'Save'
+                )}
               </Button>
             </div>
           </form>
@@ -359,25 +386,35 @@ export default function TagClient({ tags: initialTags, totalItems }: TagClientPr
       </Modal>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deletingTagId} onOpenChange={(open) => !open && setDeletingTagId(null)}>
+      <AlertDialog
+        open={!!deletingTagId}
+        onOpenChange={(open) => !open && setDeletingTagId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-destructive">Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle className='text-destructive'>
+              Are you absolutely sure?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. Removing this tag will automatically detach it from all menu items.
+              This action cannot be undone. Removing this tag will automatically
+              detach it from all menu items.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
                 handleDeleteConfirm();
               }}
               disabled={isLoading}
-              className="bg-rose-600 hover:bg-rose-700 text-white"
+              className='bg-rose-600 text-white hover:bg-rose-700'
             >
-              {isLoading ? <IconLoader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
+              {isLoading ? (
+                <IconLoader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                'Delete'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

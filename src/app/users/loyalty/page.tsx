@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { fetchWithAuth } from '@/lib/api-client';
+import { isTokenExpired } from '@/lib/jwt';
 
 interface LedgerEntry {
   id: string;
@@ -118,7 +119,7 @@ export default function CustomerLoyalty() {
   // Silent re-authentication check on mount
   useEffect(() => {
     if (!mounted) return;
-    if (!storeToken && storeRefreshToken) {
+    if (isTokenExpired(storeToken) && storeRefreshToken) {
       silentReauthHelper();
     }
   }, [mounted, storeToken, storeRefreshToken]);

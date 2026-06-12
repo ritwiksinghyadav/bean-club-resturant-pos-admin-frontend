@@ -10,11 +10,17 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { AlertModal } from '@/components/modal/alert-modal';
-import { IconEdit, IconDotsVertical, IconTrash, IconPower } from '@tabler/icons-react';
+import {
+  IconEdit,
+  IconDotsVertical,
+  IconTrash,
+  IconPower
+} from '@tabler/icons-react';
 import { Admin } from '../admin-client';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { fetchWithAdminAuth } from '@/lib/api-client';
 
 interface CellActionProps {
   data: Admin;
@@ -22,12 +28,16 @@ interface CellActionProps {
   onDelete: (id: string) => void;
 }
 
-export const CellAction: React.FC<CellActionProps> = ({ data, onEdit, onDelete }) => {
+export const CellAction: React.FC<CellActionProps> = ({
+  data,
+  onEdit,
+  onDelete
+}) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { data: session } = useSession();
-  
+
   const token = (session?.user as any)?.accessToken;
   const currentUserId = (session?.user as any)?.id;
   const isSelf = data.id === currentUserId;
@@ -45,20 +55,22 @@ export const CellAction: React.FC<CellActionProps> = ({ data, onEdit, onDelete }
 
     setLoading(true);
     try {
-      const res = await fetch(
+      const res = await fetchWithAdminAuth(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/admin/admins/${data.id}/status`,
         {
           method: 'PUT',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ isActive: !data.isActive })
         }
       );
       const resData = await res.json();
       if (res.ok && resData.success) {
-        toast.success(resData.message || `Admin ${data.isActive ? 'deactivated' : 'activated'} successfully.`);
+        toast.success(
+          resData.message ||
+            `Admin ${data.isActive ? 'deactivated' : 'activated'} successfully.`
+        );
         router.refresh();
       } else {
         toast.error(resData.message || 'Failed to update admin status.');
@@ -94,18 +106,23 @@ export const CellAction: React.FC<CellActionProps> = ({ data, onEdit, onDelete }
           <DropdownMenuItem onClick={() => onEdit(data)}>
             <IconEdit className='mr-2 h-4 w-4' /> Update
           </DropdownMenuItem>
-          <DropdownMenuItem 
-            onClick={onToggleStatus} 
+          <DropdownMenuItem
+            onClick={onToggleStatus}
             disabled={loading || isSelf}
-            className={isSelf ? 'opacity-50 cursor-not-allowed' : ''}
+            className={isSelf ? 'cursor-not-allowed opacity-50' : ''}
             title={isSelf ? 'You cannot deactivate your own account' : ''}
           >
-            <IconPower className='mr-2 h-4 w-4' /> {data.isActive ? 'Deactivate' : 'Activate'}
+            <IconPower className='mr-2 h-4 w-4' />{' '}
+            {data.isActive ? 'Deactivate' : 'Activate'}
           </DropdownMenuItem>
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={() => setOpen(true)}
             disabled={isSelf}
-            className={isSelf ? 'text-rose-600/50 opacity-50 cursor-not-allowed' : 'text-rose-600'}
+            className={
+              isSelf
+                ? 'cursor-not-allowed text-rose-600/50 opacity-50'
+                : 'text-rose-600'
+            }
             title={isSelf ? 'You cannot delete your own account' : ''}
           >
             <IconTrash className='mr-2 h-4 w-4' /> Delete

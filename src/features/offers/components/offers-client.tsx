@@ -4,13 +4,11 @@ import React, { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { fetchWithAdminAuth } from '@/lib/api-client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
-import { 
-  IconPlus, 
-  IconLoader2 
-} from '@tabler/icons-react';
+import { IconPlus, IconLoader2 } from '@tabler/icons-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,7 +45,8 @@ import { Switch } from '@/components/ui/switch';
 import { OfferTable } from './offers-tables';
 import { columns } from './offers-tables/columns';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
 
 export type Offer = {
   id: string;
@@ -63,15 +62,27 @@ export type Offer = {
 };
 
 const offerSchema = z.object({
-  code: z.string().min(2, 'Code must be at least 2 characters').transform(val => val.toUpperCase()),
+  code: z
+    .string()
+    .min(2, 'Code must be at least 2 characters')
+    .transform((val) => val.toUpperCase()),
   description: z.string().min(1, 'Description is required'),
   discountType: z.enum(['percentage', 'fixed']),
-  discountValue: z.coerce.number().positive('Discount value must be a positive number'),
+  discountValue: z.coerce
+    .number()
+    .positive('Discount value must be a positive number'),
   maxDiscount: z.preprocess(
     (val) => (val === '' || val === undefined ? null : val),
-    z.coerce.number().positive('Max discount must be a positive number').nullable().optional()
+    z.coerce
+      .number()
+      .positive('Max discount must be a positive number')
+      .nullable()
+      .optional()
   ),
-  minBillAmount: z.coerce.number().nonnegative('Minimum bill amount cannot be negative').default(0),
+  minBillAmount: z.coerce
+    .number()
+    .nonnegative('Minimum bill amount cannot be negative')
+    .default(0),
   isActive: z.boolean().default(true)
 });
 
@@ -82,7 +93,10 @@ interface OfferClientProps {
   totalItems: number;
 }
 
-export default function OfferClient({ offers: initialOffers, totalItems }: OfferClientProps) {
+export default function OfferClient({
+  offers: initialOffers,
+  totalItems
+}: OfferClientProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const token = (session?.user as any)?.accessToken;
@@ -136,11 +150,10 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
 
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/admin/offers`, {
+      const res = await fetchWithAdminAuth(`${API_URL}/admin/offers`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(values)
       });
@@ -182,14 +195,16 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
 
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/admin/offers/${editingOffer.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(values)
-      });
+      const res = await fetchWithAdminAuth(
+        `${API_URL}/admin/offers/${editingOffer.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(values)
+        }
+      );
 
       const data = await res.json();
       if (res.ok && data.success) {
@@ -216,12 +231,12 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
 
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/admin/offers/${deletingOfferId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`
+      const res = await fetchWithAdminAuth(
+        `${API_URL}/admin/offers/${deletingOfferId}`,
+        {
+          method: 'DELETE'
         }
-      });
+      );
 
       const data = await res.json();
       if (res.ok && data.success) {
@@ -241,24 +256,26 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
   };
 
   return (
-    <div className="flex flex-1 flex-col space-y-4">
-      <div className="flex items-center justify-between">
+    <div className='flex flex-1 flex-col space-y-4'>
+      <div className='flex items-center justify-between'>
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Offers &amp; Coupons</h2>
-          <p className="text-muted-foreground text-sm">
+          <h2 className='text-3xl font-bold tracking-tight'>
+            Offers &amp; Coupons
+          </h2>
+          <p className='text-muted-foreground text-sm'>
             Manage restaurant promo codes, fixed and percentage discounts.
           </p>
         </div>
-        <Button 
+        <Button
           onClick={() => setIsAddOpen(true)}
-          className="shadow-md hover:shadow-lg active:scale-95 transition-all duration-300 text-xs md:text-sm"
+          className='text-xs shadow-md transition-all duration-300 hover:shadow-lg active:scale-95 md:text-sm'
         >
-          <IconPlus className="mr-2 h-4 w-4" /> Add Offer
+          <IconPlus className='mr-2 h-4 w-4' /> Add Offer
         </Button>
       </div>
       <Separator />
 
-      <OfferTable 
+      <OfferTable
         data={offers}
         totalItems={totalItems}
         columns={columns}
@@ -268,8 +285,8 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
 
       {/* Add Offer Modal */}
       <Modal
-        title="Add Offer"
-        description="Create a new discount offer/coupon code."
+        title='Add Offer'
+        description='Create a new discount offer/coupon code.'
         isOpen={isAddOpen}
         onClose={() => {
           setIsAddOpen(false);
@@ -277,16 +294,19 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
         }}
       >
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleAddSubmit)} className="space-y-4 pt-2">
-            <div className="grid grid-cols-2 gap-4">
+          <form
+            onSubmit={form.handleSubmit(handleAddSubmit)}
+            className='space-y-4 pt-2'
+          >
+            <div className='grid grid-cols-2 gap-4'>
               <FormField
                 control={form.control}
-                name="code"
+                name='code'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Offer Code</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. WELCOME50" {...field} />
+                      <Input placeholder='e.g. WELCOME50' {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -295,19 +315,24 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
 
               <FormField
                 control={form.control}
-                name="discountType"
+                name='discountType'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Discount Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
+                          <SelectValue placeholder='Select type' />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="percentage">Percentage (%)</SelectItem>
-                        <SelectItem value="fixed">Fixed (₹)</SelectItem>
+                        <SelectItem value='percentage'>
+                          Percentage (%)
+                        </SelectItem>
+                        <SelectItem value='fixed'>Fixed (₹)</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -316,15 +341,18 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className='grid grid-cols-3 gap-4'>
               <FormField
                 control={form.control}
-                name="discountValue"
+                name='discountValue'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Discount Value {addDiscountType === 'fixed' ? '(₹)' : '(%)'}</FormLabel>
+                    <FormLabel>
+                      Discount Value{' '}
+                      {addDiscountType === 'fixed' ? '(₹)' : '(%)'}
+                    </FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="50 or 100" {...field} />
+                      <Input type='number' placeholder='50 or 100' {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -333,17 +361,19 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
 
               <FormField
                 control={form.control}
-                name="maxDiscount"
+                name='maxDiscount'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Max Discount Cap</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder={addDiscountType === 'percentage' ? "e.g. 200" : "N/A"} 
-                        disabled={addDiscountType !== 'percentage'} 
-                        {...field} 
-                        value={field.value ?? ''} 
+                      <Input
+                        type='number'
+                        placeholder={
+                          addDiscountType === 'percentage' ? 'e.g. 200' : 'N/A'
+                        }
+                        disabled={addDiscountType !== 'percentage'}
+                        {...field}
+                        value={field.value ?? ''}
                       />
                     </FormControl>
                     <FormMessage />
@@ -353,12 +383,12 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
 
               <FormField
                 control={form.control}
-                name="minBillAmount"
+                name='minBillAmount'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Min Bill Amount</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="e.g. 300" {...field} />
+                      <Input type='number' placeholder='e.g. 300' {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -368,22 +398,26 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
 
             <FormField
               control={form.control}
-              name="description"
+              name='description'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="e.g. 50% off up to ₹200 on orders above ₹300" className="resize-none h-16" {...field} />
+                    <Textarea
+                      placeholder='e.g. 50% off up to ₹200 on orders above ₹300'
+                      className='h-16 resize-none'
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className='flex justify-end space-x-2 pt-4'>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={() => {
                   setIsAddOpen(false);
                   form.reset();
@@ -392,12 +426,16 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type='submit'
                 disabled={isLoading}
-                className="min-w-[80px]"
+                className='min-w-[80px]'
               >
-                {isLoading ? <IconLoader2 className="h-4 w-4 animate-spin" /> : 'Create'}
+                {isLoading ? (
+                  <IconLoader2 className='h-4 w-4 animate-spin' />
+                ) : (
+                  'Create'
+                )}
               </Button>
             </div>
           </form>
@@ -406,8 +444,8 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
 
       {/* Edit Offer Modal */}
       <Modal
-        title="Edit Offer"
-        description="Update discount offer details."
+        title='Edit Offer'
+        description='Update discount offer details.'
         isOpen={isEditOpen}
         onClose={() => {
           setIsEditOpen(false);
@@ -415,16 +453,19 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
         }}
       >
         <Form {...editForm}>
-          <form onSubmit={editForm.handleSubmit(handleEditSubmit)} className="space-y-4 pt-2">
-            <div className="grid grid-cols-2 gap-4">
+          <form
+            onSubmit={editForm.handleSubmit(handleEditSubmit)}
+            className='space-y-4 pt-2'
+          >
+            <div className='grid grid-cols-2 gap-4'>
               <FormField
                 control={editForm.control}
-                name="code"
+                name='code'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Offer Code</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. WELCOME50" {...field} />
+                      <Input placeholder='e.g. WELCOME50' {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -433,19 +474,24 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
 
               <FormField
                 control={editForm.control}
-                name="discountType"
+                name='discountType'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Discount Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
+                          <SelectValue placeholder='Select type' />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="percentage">Percentage (%)</SelectItem>
-                        <SelectItem value="fixed">Fixed (₹)</SelectItem>
+                        <SelectItem value='percentage'>
+                          Percentage (%)
+                        </SelectItem>
+                        <SelectItem value='fixed'>Fixed (₹)</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -454,15 +500,18 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className='grid grid-cols-3 gap-4'>
               <FormField
                 control={editForm.control}
-                name="discountValue"
+                name='discountValue'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Discount Value {editDiscountType === 'fixed' ? '(₹)' : '(%)'}</FormLabel>
+                    <FormLabel>
+                      Discount Value{' '}
+                      {editDiscountType === 'fixed' ? '(₹)' : '(%)'}
+                    </FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="50 or 100" {...field} />
+                      <Input type='number' placeholder='50 or 100' {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -471,17 +520,19 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
 
               <FormField
                 control={editForm.control}
-                name="maxDiscount"
+                name='maxDiscount'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Max Discount Cap</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder={editDiscountType === 'percentage' ? "e.g. 200" : "N/A"} 
-                        disabled={editDiscountType !== 'percentage'} 
-                        {...field} 
-                        value={field.value ?? ''} 
+                      <Input
+                        type='number'
+                        placeholder={
+                          editDiscountType === 'percentage' ? 'e.g. 200' : 'N/A'
+                        }
+                        disabled={editDiscountType !== 'percentage'}
+                        {...field}
+                        value={field.value ?? ''}
                       />
                     </FormControl>
                     <FormMessage />
@@ -491,12 +542,12 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
 
               <FormField
                 control={editForm.control}
-                name="minBillAmount"
+                name='minBillAmount'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Min Bill Amount</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="e.g. 300" {...field} />
+                      <Input type='number' placeholder='e.g. 300' {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -506,12 +557,16 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
 
             <FormField
               control={editForm.control}
-              name="description"
+              name='description'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="e.g. 50% off up to ₹200 on orders above ₹300" className="resize-none h-16" {...field} />
+                    <Textarea
+                      placeholder='e.g. 50% off up to ₹200 on orders above ₹300'
+                      className='h-16 resize-none'
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -520,12 +575,12 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
 
             <FormField
               control={editForm.control}
-              name="isActive"
+              name='isActive'
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3.5 shadow-sm">
-                  <div className="space-y-0.5">
+                <FormItem className='flex flex-row items-center justify-between rounded-lg border p-3.5 shadow-sm'>
+                  <div className='space-y-0.5'>
                     <FormLabel>Active Status</FormLabel>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className='text-muted-foreground text-[11px]'>
                       Enable or disable this coupon code.
                     </p>
                   </div>
@@ -539,10 +594,10 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
               )}
             />
 
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className='flex justify-end space-x-2 pt-4'>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={() => {
                   setIsEditOpen(false);
                   setEditingOffer(null);
@@ -551,12 +606,16 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type='submit'
                 disabled={isLoading}
-                className="min-w-[80px]"
+                className='min-w-[80px]'
               >
-                {isLoading ? <IconLoader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+                {isLoading ? (
+                  <IconLoader2 className='h-4 w-4 animate-spin' />
+                ) : (
+                  'Save'
+                )}
               </Button>
             </div>
           </form>
@@ -564,25 +623,35 @@ export default function OfferClient({ offers: initialOffers, totalItems }: Offer
       </Modal>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deletingOfferId} onOpenChange={(open) => !open && setDeletingOfferId(null)}>
+      <AlertDialog
+        open={!!deletingOfferId}
+        onOpenChange={(open) => !open && setDeletingOfferId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-destructive">Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle className='text-destructive'>
+              Are you absolutely sure?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. Removing this offer will delete it permanently and it will no longer be available for checkouts.
+              This action cannot be undone. Removing this offer will delete it
+              permanently and it will no longer be available for checkouts.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
                 handleDeleteConfirm();
               }}
               disabled={isLoading}
-              className="bg-rose-600 hover:bg-rose-700 text-white"
+              className='bg-rose-600 text-white hover:bg-rose-700'
             >
-              {isLoading ? <IconLoader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
+              {isLoading ? (
+                <IconLoader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                'Delete'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

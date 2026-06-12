@@ -61,7 +61,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     })
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
@@ -72,11 +72,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return token;
       }
 
-      // If token is not expired, return it
-      if (
-        token.accessTokenExpires &&
-        Date.now() < (token.accessTokenExpires as number)
-      ) {
+      // Trigger token refresh if expired OR if forced by client session update
+      const shouldRefresh =
+        !token.accessTokenExpires ||
+        Date.now() >= (token.accessTokenExpires as number) ||
+        (trigger === 'update' && session?.forceRefresh);
+
+      if (!shouldRefresh) {
         return token;
       }
 

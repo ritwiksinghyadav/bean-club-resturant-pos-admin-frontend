@@ -9,11 +9,17 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { MenuItem } from './columns';
-import { IconEdit, IconDotsVertical, IconTrash, IconPower } from '@tabler/icons-react';
+import {
+  IconEdit,
+  IconDotsVertical,
+  IconTrash,
+  IconPower
+} from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
+import { fetchWithAdminAuth } from '@/lib/api-client';
 
 interface CellActionProps {
   data: MenuItem;
@@ -34,12 +40,12 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/admin/menu-items/${data.id}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`
+      const res = await fetchWithAdminAuth(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/admin/menu-items/${data.id}`,
+        {
+          method: 'DELETE'
         }
-      });
+      );
       const resData = await res.json();
       if (res.ok && resData.success) {
         toast.success(resData.message || 'Product deleted successfully.');
@@ -64,17 +70,22 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/admin/menu-items/${data.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ isActive: !data.isActive })
-      });
+      const res = await fetchWithAdminAuth(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/admin/menu-items/${data.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ isActive: !data.isActive })
+        }
+      );
       const resData = await res.json();
       if (res.ok && resData.success) {
-        toast.success(resData.message || `Product ${data.isActive ? 'deactivated' : 'activated'} successfully.`);
+        toast.success(
+          resData.message ||
+            `Product ${data.isActive ? 'deactivated' : 'activated'} successfully.`
+        );
         router.refresh();
       } else {
         toast.error(resData.message || 'Failed to update product status.');
@@ -111,7 +122,8 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
             <IconEdit className='mr-2 h-4 w-4' /> Update
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onToggleStatus} disabled={loading}>
-            <IconPower className='mr-2 h-4 w-4' /> {data.isActive ? 'Deactivate' : 'Activate'}
+            <IconPower className='mr-2 h-4 w-4' />{' '}
+            {data.isActive ? 'Deactivate' : 'Activate'}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpen(true)}>
             <IconTrash className='mr-2 h-4 w-4' /> Delete

@@ -16,6 +16,7 @@ import {
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchWithAuth } from '@/lib/api-client';
+import { isTokenExpired } from '@/lib/jwt';
 
 interface OrderItem {
   id: string;
@@ -519,7 +520,7 @@ export default function CustomerOrders() {
 
   useEffect(() => {
     if (!mounted) return;
-    if (!storeToken && storeRefreshToken) silentReauthHelper();
+    if (isTokenExpired(storeToken) && storeRefreshToken) silentReauthHelper();
   }, [mounted, storeToken, storeRefreshToken]);
 
   useEffect(() => {

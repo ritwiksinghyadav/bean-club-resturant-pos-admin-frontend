@@ -16,6 +16,7 @@ import ProfileConfirmModal from './_components/ProfileConfirmModal';
 import SettingsDrawer from './_components/SettingsDrawer';
 import { MenuItem, Category, CreatedOrderDetails } from './_components/types';
 import { fetchWithAuth } from '@/lib/api-client';
+import { isTokenExpired } from '@/lib/jwt';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -84,7 +85,7 @@ export default function CustomerMenu() {
 
   useEffect(() => {
     if (!mounted) return;
-    if (!storeToken && storeRefreshToken) {
+    if (isTokenExpired(storeToken) && storeRefreshToken) {
       silentReauthHelper();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
