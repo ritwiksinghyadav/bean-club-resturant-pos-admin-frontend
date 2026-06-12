@@ -145,7 +145,7 @@ export default function PullToRefresh({ children }: PullToRefreshProps) {
         }}
         transition={
           isPulling.current
-            ? { type: 'just' }
+            ? { type: 'tween', duration: 0 }
             : { type: 'spring', stiffness: 300, damping: 25 }
         }
         className='absolute left-1/2 z-50 flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full border border-slate-100 bg-white shadow-lg'
@@ -167,7 +167,7 @@ export default function PullToRefresh({ children }: PullToRefreshProps) {
         }}
         transition={
           isPulling.current
-            ? { type: 'just' }
+            ? { type: 'tween', duration: 0 }
             : { type: 'spring', stiffness: 300, damping: 25 }
         }
         className='min-h-full w-full'
