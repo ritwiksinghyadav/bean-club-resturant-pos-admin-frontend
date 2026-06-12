@@ -147,7 +147,11 @@ export default function CustomerMenu() {
         process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
       const res = await fetchWithAuth(`${apiUrl}/users/loyalty`);
       if (res.status === 401) {
-        setIsAuthOpen(true);
+        if (storeToken || token) {
+          logout();
+        } else {
+          setIsAuthOpen(true);
+        }
         return;
       }
       const data = await res.json();
@@ -396,7 +400,11 @@ export default function CustomerMenu() {
 
       if (res.status === 401) {
         setIsPlacingOrder(false);
-        setIsAuthOpen(true);
+        if (storeToken || token) {
+          logout();
+        } else {
+          setIsAuthOpen(true);
+        }
         return;
       }
 

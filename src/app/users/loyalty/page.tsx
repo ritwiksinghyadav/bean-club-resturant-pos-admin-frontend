@@ -18,6 +18,8 @@ import {
 import { toast } from 'sonner';
 import { fetchWithAuth } from '@/lib/api-client';
 import { isTokenExpired } from '@/lib/jwt';
+import SettingsDrawer from '../_components/SettingsDrawer';
+import AuthModal from '../_components/AuthModal';
 
 interface LedgerEntry {
   id: string;
@@ -31,6 +33,7 @@ export default function CustomerLoyalty() {
   const storeRefreshToken = useCartStore((state) => state.refreshToken);
   const storeCustomer = useCartStore((state) => state.customer);
   const setAuth = useCartStore((state) => state.setAuth);
+  const logout = useCartStore((state) => state.logout);
 
   const [token, setToken] = useState<string | null>(null);
   const [customer, setCustomer] = useState<any | null>(null);
@@ -44,6 +47,8 @@ export default function CustomerLoyalty() {
   const [authName, setAuthName] = useState('');
   const [authPhone, setAuthPhone] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const silentReauthHelper = async (): Promise<string | null> => {
     try {
@@ -86,7 +91,11 @@ export default function CustomerLoyalty() {
       const res = await fetchWithAuth(`${apiUrl}/users/loyalty`);
 
       if (res.status === 401) {
-        setIsAuthOpen(true);
+        if (storeToken || token) {
+          logout();
+        } else {
+          setIsAuthOpen(true);
+        }
         return;
       }
 
@@ -215,18 +224,36 @@ export default function CustomerLoyalty() {
             </p>
           </div>
         </div>
-        {token && (
-          <button
-            onClick={() => fetchLoyalty()}
-            disabled={loading}
-            className='flex items-center gap-1.5 rounded-2xl bg-slate-100/80 px-3 py-1.5 text-xs font-bold text-slate-500 transition-all hover:bg-amber-50 hover:text-amber-600 disabled:opacity-50'
-          >
-            <Loader2
-              className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`}
-            />
-            Refresh
-          </button>
-        )}
+        <div className='flex items-center gap-2'>
+          {token && (
+            <button
+              onClick={() => fetchLoyalty()}
+              disabled={loading}
+              className='flex items-center gap-1.5 rounded-2xl bg-slate-100/80 px-3 py-1.5 text-xs font-bold text-slate-500 transition-all hover:bg-amber-50 hover:text-amber-600 disabled:opacity-50'
+            >
+              <Loader2
+                className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`}
+              />
+              Refresh
+            </button>
+          )}
+          {customer ? (
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              title='Profile Settings'
+              className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-red-700 text-sm font-black text-white shadow-md shadow-red-500/30 transition-all hover:shadow-lg hover:shadow-red-500/40 active:scale-95'
+            >
+              {customer.name.charAt(0).toUpperCase()}
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsAuthOpen(true)}
+              className='text-sm font-bold text-slate-500 transition-colors hover:text-red-600'
+            >
+              Log in
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Main Panel */}
@@ -374,6 +401,22 @@ export default function CustomerLoyalty() {
           </div>
         )}
       </div>
+
+      <SettingsDrawer
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
+
+      {/* <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        authName={authName}
+        authPhone={authPhone}
+        onNameChange={setAuthName}
+        onPhoneChange={setAuthPhone}
+        loading={authLoading}
+        onSubmit={handleAuthSubmit}
+      /> */}
     </div>
   );
 }
