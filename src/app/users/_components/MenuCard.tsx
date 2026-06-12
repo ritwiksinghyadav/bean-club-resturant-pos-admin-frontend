@@ -94,26 +94,26 @@ export default function MenuCard({
             <motion.button
               whileTap={{ scale: 0.92 }}
               onClick={() => onPlus(item)}
-              className='flex w-full items-center justify-center gap-0.5 rounded-xl border-2 border-red-500 bg-white py-1.5 text-xs font-extrabold tracking-wide text-red-600 uppercase shadow-sm transition-all duration-200 hover:bg-red-600 hover:text-white hover:shadow-md hover:shadow-red-500/30'
+              className='flex h-8 w-full items-center justify-center gap-0.5 rounded-full border-2 border-red-500 bg-white text-xs font-extrabold tracking-wide text-red-600 uppercase shadow-sm transition-all duration-200 hover:bg-red-600 hover:text-white hover:shadow-md hover:shadow-red-500/30'
             >
               + Add
             </motion.button>
           ) : (
-            <div className='flex w-full items-center justify-between overflow-hidden rounded-xl bg-red-600 text-sm font-bold text-white shadow-md shadow-red-500/30'>
+            <div className='flex h-8 w-full items-center justify-between overflow-hidden rounded-full border-2 border-red-600 bg-red-600 text-sm font-bold text-white shadow-md shadow-red-500/30'>
               <motion.button
                 whileTap={{ scale: 0.8 }}
                 onClick={() => onMinus(item)}
-                className='p-1.5 px-2.5 transition-colors hover:bg-red-700 active:bg-red-800'
+                className='flex h-full items-center justify-center px-2.5 text-white transition-colors hover:bg-red-700 active:bg-red-800'
               >
                 <Minus className='h-3.5 w-3.5' />
               </motion.button>
-              <span className='pointer-events-none flex-1 text-center text-sm font-black'>
+              <span className='pointer-events-none flex-1 text-center text-sm font-black text-white'>
                 {qty}
               </span>
               <motion.button
                 whileTap={{ scale: 0.8 }}
                 onClick={() => onPlus(item)}
-                className='p-1.5 px-2.5 transition-colors hover:bg-red-700 active:bg-red-800'
+                className='flex h-full items-center justify-center px-2.5 text-white transition-colors hover:bg-red-700 active:bg-red-800'
               >
                 <Plus className='h-3.5 w-3.5' />
               </motion.button>
