@@ -185,6 +185,32 @@ export default function CustomerMenu() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  // Listen to custom pull-to-refresh event
+  useEffect(() => {
+    const handlePortalRefresh = async () => {
+      try {
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+        const res = await fetch(`${apiUrl}/users/menu`);
+        const data = await res.json();
+        if (data.success && data.result?.menu) {
+          setMenu(data.result.menu);
+        }
+        if (storeToken || token) {
+          fetchLoyaltyBalance();
+          fetchActiveOffers();
+        }
+      } catch (err) {
+        console.error('Menu refresh failed:', err);
+      }
+    };
+
+    window.addEventListener('users-portal-refresh', handlePortalRefresh);
+    return () => {
+      window.removeEventListener('users-portal-refresh', handlePortalRefresh);
+    };
+  }, [token, storeToken]);
+
   // Filter out 'Others' or 'Other' categories for the horizontal navigation pills
   const pillCategories = menu.filter(
     (c) => c.name.toLowerCase() !== 'others' && c.name.toLowerCase() !== 'other'

@@ -618,6 +618,17 @@ export default function CustomerOrders() {
     };
   }, [token, mounted]);
 
+  useEffect(() => {
+    const handlePortalRefresh = () => {
+      fetchOrders();
+    };
+
+    window.addEventListener('users-portal-refresh', handlePortalRefresh);
+    return () => {
+      window.removeEventListener('users-portal-refresh', handlePortalRefresh);
+    };
+  }, [token, mounted]);
+
   if (!mounted) return null;
 
   const activeOrders = orders.filter((o) => isActive(o.status));

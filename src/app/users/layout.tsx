@@ -7,6 +7,7 @@ import { Coffee, Receipt, Award } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from './cart-store';
 import SignInPage from './_components/SignInPage';
+import PullToRefresh from './_components/PullToRefresh';
 
 export default function UsersLayout({
   children
@@ -61,7 +62,7 @@ export default function UsersLayout({
         ) : (
           <>
             <main className='flex-1 overflow-x-hidden overflow-y-auto pb-28 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
-              {children}
+              <PullToRefresh>{children}</PullToRefresh>
             </main>
 
             {mounted && customer && (
