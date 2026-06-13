@@ -410,6 +410,7 @@ export default function CustomerMenu() {
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
       const pointsRedeemed = redeemPointsChecked ? maxPointsToRedeem : 0;
+      const specialNote = useCartStore.getState().specialNote;
       const res = await fetchWithAuth(`${apiUrl}/users/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -421,7 +422,8 @@ export default function CustomerMenu() {
           })),
           pointsRedeemed,
           offerCode: appliedOfferCode,
-          type
+          type,
+          specialNote: specialNote || null
         })
       });
 

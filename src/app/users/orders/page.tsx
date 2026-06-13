@@ -51,6 +51,8 @@ interface Order {
     description: string;
   } | null;
   items: OrderItem[];
+  specialNote?: string | null;
+  cancelReason?: string | null;
 }
 
 const ACTIVE_STATUSES = ['pending', 'preparing', 'ready'];
@@ -284,6 +286,31 @@ function PastOrderCard({ order }: { order: Order }) {
                 </div>
               )}
 
+              {/* Special requirement note */}
+              {order.specialNote && (
+                <div className='rounded-xl border border-slate-100 bg-slate-50/50 p-2.5 text-[11px]'>
+                  <span className='mb-0.5 block font-bold text-slate-700'>
+                    Special Instructions:
+                  </span>
+                  <span className='font-medium text-slate-600'>
+                    &ldquo;{order.specialNote}&rdquo;
+                  </span>
+                </div>
+              )}
+
+              {/* Cancellation reason */}
+              {order.status.toLowerCase() === 'cancelled' &&
+                order.cancelReason && (
+                  <div className='rounded-xl border border-rose-100 bg-rose-50/20 p-2.5 text-[11px]'>
+                    <span className='mb-0.5 block font-bold text-rose-700'>
+                      Reason for Cancellation:
+                    </span>
+                    <span className='font-medium text-slate-600'>
+                      &ldquo;{order.cancelReason}&rdquo;
+                    </span>
+                  </div>
+                )}
+
               {/* Footer */}
               <div className='flex items-center justify-between'>
                 <span className='text-[10px] font-semibold text-emerald-600'>
@@ -425,6 +452,18 @@ function ActiveOrderCard({ order }: { order: Order }) {
           </div>
         ))}
       </div>
+
+      {/* Special requirement note */}
+      {order.specialNote && (
+        <div className='rounded-xl border border-slate-100 bg-slate-50/50 p-2.5 text-[11px]'>
+          <span className='mb-0.5 block font-bold text-slate-700'>
+            Special Instructions:
+          </span>
+          <span className='font-medium text-slate-600'>
+            &ldquo;{order.specialNote}&rdquo;
+          </span>
+        </div>
+      )}
 
       {/* Total */}
       <div className='flex items-center justify-between'>

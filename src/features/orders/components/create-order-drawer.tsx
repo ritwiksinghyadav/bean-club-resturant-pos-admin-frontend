@@ -97,6 +97,7 @@ export default function CreateOrderDrawer({
   const [pointsToRedeem, setPointsToRedeem] = useState<number>(0);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [specialNoteInput, setSpecialNoteInput] = useState('');
 
   // Fetch menu and active offers on mount
   useEffect(() => {
@@ -113,6 +114,7 @@ export default function CreateOrderDrawer({
       setPromoCodeInput('');
       setAppliedOffer(null);
       setPointsToRedeem(0);
+      setSpecialNoteInput('');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -354,7 +356,8 @@ export default function CreateOrderDrawer({
           quantity: i.quantity
         })),
         pointsRedeemed: pointsToRedeem,
-        offerCode: appliedOffer?.code || null
+        offerCode: appliedOffer?.code || null,
+        specialNote: specialNoteInput.trim() || null
       };
 
       const res = await fetchWithAdminAuth(
@@ -793,6 +796,24 @@ export default function CreateOrderDrawer({
                   </button>
                 </div>
               )}
+            </div>
+
+            {/* Special Instructions Note */}
+            <div className='space-y-1.5'>
+              <Label
+                htmlFor='special-note'
+                className='text-xs font-bold text-slate-700'
+              >
+                Special Instructions (Optional)
+              </Label>
+              <Input
+                id='special-note'
+                type='text'
+                placeholder='E.g. Less sugar, extra hot, etc.'
+                className='text-xs'
+                value={specialNoteInput}
+                onChange={(e) => setSpecialNoteInput(e.target.value)}
+              />
             </div>
 
             {/* Points Redemption */}

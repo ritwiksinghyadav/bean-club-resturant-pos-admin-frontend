@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useQueryState, parseAsInteger, parseAsString } from 'nuqs';
 import { streamSSE } from '@/lib/sse';
@@ -57,6 +57,8 @@ export interface Order {
   } | null;
   user: { name: string; phoneNumber: string };
   items: OrderItem[];
+  specialNote?: string | null;
+  cancelReason?: string | null;
 }
 
 interface OrderClientProps {
@@ -157,8 +159,11 @@ function OrderDetailDrawer({
   order: Order | null;
   isLoading: boolean;
   onClose: () => void;
-  onUpdateStatus: (id: string, status: string) => void;
+  onUpdateStatus: (id: string, status: string, cancelReason?: string) => void;
 }) {
+  const [showCancelReasonInput, setShowCancelReasonInput] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+
   if (!order && !isLoading) return null;
 
   return (
@@ -337,6 +342,30 @@ function OrderDetailDrawer({
                 )}
               </div>
 
+              {/* Special Instructions */}
+              {order.specialNote && (
+                <div className='space-y-1 rounded-xl border border-red-100/60 bg-red-50/20 p-4'>
+                  <p className='text-[10px] font-extrabold tracking-wider text-red-700 uppercase'>
+                    Special Instructions (Customer)
+                  </p>
+                  <p className='text-sm font-semibold text-slate-800'>
+                    &ldquo;{order.specialNote}&rdquo;
+                  </p>
+                </div>
+              )}
+
+              {/* Cancellation Reason */}
+              {order.status === 'cancelled' && order.cancelReason && (
+                <div className='space-y-1 rounded-xl border border-rose-100/60 bg-rose-50/30 p-4'>
+                  <p className='text-[10px] font-extrabold tracking-wider text-rose-700 uppercase'>
+                    Cancellation Reason (Admin)
+                  </p>
+                  <p className='text-sm font-semibold text-slate-800'>
+                    &ldquo;{order.cancelReason}&rdquo;
+                  </p>
+                </div>
+              )}
+
               {/* Pricing */}
               <div className='bg-muted/20 space-y-2.5 rounded-xl border p-4'>
                 <p className='text-muted-foreground text-[10px] font-extrabold tracking-wider uppercase'>
@@ -384,60 +413,106 @@ function OrderDetailDrawer({
         {/* Footer Actions */}
         {!isLoading && order && (
           <div className='bg-muted/10 space-y-2 border-t px-6 py-4'>
-            {order.status === 'pending' && (
-              <Button
-                className='w-full rounded-xl bg-green-600 font-bold text-white hover:bg-green-700'
-                onClick={() => {
-                  onUpdateStatus(order.id, 'preparing');
-                  onClose();
-                }}
-              >
-                <Check className='mr-1.5 h-4 w-4' /> Approve &amp; Send to
-                Kitchen
-              </Button>
-            )}
-            {order.status === 'approved' && (
-              <Button
-                className='w-full rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700'
-                onClick={() => {
-                  onUpdateStatus(order.id, 'preparing');
-                  onClose();
-                }}
-              >
-                <ChefHat className='mr-1.5 h-4 w-4' /> Send to Kitchen
-              </Button>
-            )}
-            {order.status === 'preparing' && (
-              <Button
-                className='w-full rounded-xl bg-emerald-600 font-bold text-white hover:bg-emerald-700'
-                onClick={() => {
-                  onUpdateStatus(order.id, 'completed');
-                  onClose();
-                }}
-              >
-                <CircleCheck className='mr-1.5 h-4 w-4' /> Mark as Ready
-              </Button>
-            )}
-            {(order.status === 'completed' || order.status === 'cancelled') && (
-              <div
-                className={`rounded-xl border py-2 text-center text-sm font-bold ${order.status === 'completed' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}
-              >
-                {order.status === 'completed'
-                  ? '✓ Order Complete'
-                  : '✕ Order Cancelled'}
+            {showCancelReasonInput ? (
+              <div className='animate-in fade-in-50 space-y-3 rounded-xl border border-rose-200 bg-rose-50/30 p-4 duration-200'>
+                <p className='text-xs font-black tracking-wider text-rose-800 uppercase'>
+                  Mandatory: Reason for Cancellation
+                </p>
+                <textarea
+                  rows={2}
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder='Enter reason for cancelling order...'
+                  className='w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs font-semibold text-slate-700 transition-all outline-none placeholder:text-slate-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-500'
+                />
+                <div className='flex gap-2'>
+                  <Button
+                    variant='outline'
+                    className='flex-1 rounded-lg text-xs font-bold'
+                    onClick={() => {
+                      setShowCancelReasonInput(false);
+                      setCancelReason('');
+                    }}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    className='flex-1 rounded-lg bg-rose-600 text-xs font-bold text-white hover:bg-rose-700'
+                    disabled={!cancelReason.trim()}
+                    onClick={() => {
+                      onUpdateStatus(
+                        order.id,
+                        'cancelled',
+                        cancelReason.trim()
+                      );
+                      setShowCancelReasonInput(false);
+                      setCancelReason('');
+                      onClose();
+                    }}
+                  >
+                    Confirm Cancel
+                  </Button>
+                </div>
               </div>
-            )}
-            {order.status !== 'cancelled' && order.status !== 'completed' && (
-              <Button
-                variant='outline'
-                className='w-full rounded-xl border-rose-200 font-bold text-rose-600 hover:bg-rose-50'
-                onClick={() => {
-                  onUpdateStatus(order.id, 'cancelled');
-                  onClose();
-                }}
-              >
-                <X className='mr-1.5 h-4 w-4' /> Cancel Order
-              </Button>
+            ) : (
+              <>
+                {order.status === 'pending' && (
+                  <Button
+                    className='w-full rounded-xl bg-green-600 font-bold text-white hover:bg-green-700'
+                    onClick={() => {
+                      onUpdateStatus(order.id, 'preparing');
+                      onClose();
+                    }}
+                  >
+                    <Check className='mr-1.5 h-4 w-4' /> Approve &amp; Send to
+                    Kitchen
+                  </Button>
+                )}
+                {order.status === 'approved' && (
+                  <Button
+                    className='w-full rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700'
+                    onClick={() => {
+                      onUpdateStatus(order.id, 'preparing');
+                      onClose();
+                    }}
+                  >
+                    <ChefHat className='mr-1.5 h-4 w-4' /> Send to Kitchen
+                  </Button>
+                )}
+                {order.status === 'preparing' && (
+                  <Button
+                    className='w-full rounded-xl bg-emerald-600 font-bold text-white hover:bg-emerald-700'
+                    onClick={() => {
+                      onUpdateStatus(order.id, 'completed');
+                      onClose();
+                    }}
+                  >
+                    <CircleCheck className='mr-1.5 h-4 w-4' /> Mark as Ready
+                  </Button>
+                )}
+                {(order.status === 'completed' ||
+                  order.status === 'cancelled') && (
+                  <div
+                    className={`rounded-xl border py-2 text-center text-sm font-bold ${order.status === 'completed' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}
+                  >
+                    {order.status === 'completed'
+                      ? '✓ Order Complete'
+                      : '✕ Order Cancelled'}
+                  </div>
+                )}
+                {order.status !== 'cancelled' &&
+                  order.status !== 'completed' && (
+                    <Button
+                      variant='outline'
+                      className='w-full rounded-xl border-rose-200 font-bold text-rose-600 hover:bg-rose-50'
+                      onClick={() => {
+                        setShowCancelReasonInput(true);
+                      }}
+                    >
+                      <X className='mr-1.5 h-4 w-4' /> Cancel Order
+                    </Button>
+                  )}
+              </>
             )}
           </div>
         )}
@@ -458,7 +533,14 @@ export default function OrderClient({ initialData }: OrderClientProps) {
   );
   const [loading, setLoading] = useState(false);
   const [sseConnected, setSseConnected] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrderState] = useState<Order | null>(null);
+  const selectedOrderIdRef = useRef<string | null>(null);
+
+  const setSelectedOrder = (order: Order | null) => {
+    setSelectedOrderState(order);
+    selectedOrderIdRef.current = order ? order.id : null;
+  };
+
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
 
@@ -475,7 +557,7 @@ export default function OrderClient({ initialData }: OrderClientProps) {
     setDrawerLoading(true);
     // Optimistically open drawer with stale data if we have it
     const existing = orders.find((o) => o.id === orderId);
-    if (existing && !selectedOrder) setSelectedOrder(existing);
+    if (existing && !selectedOrderIdRef.current) setSelectedOrder(existing);
 
     try {
       const apiUrl =
@@ -533,9 +615,10 @@ export default function OrderClient({ initialData }: OrderClientProps) {
         setTotalItems(data.result.pagination?.totalItems || 0);
 
         // Sync drawer if open but do not re-fetch single endpoint unless needed
-        if (selectedOrder) {
+        const currentSelectedId = selectedOrderIdRef.current;
+        if (currentSelectedId) {
           const updated = (data.result.orders || []).find(
-            (o: Order) => o.id === selectedOrder.id
+            (o: Order) => o.id === currentSelectedId
           );
           if (updated && !drawerLoading) setSelectedOrder(updated);
         }
@@ -603,7 +686,11 @@ export default function OrderClient({ initialData }: OrderClientProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, page, perPage, activeTab, tokenSearch]);
 
-  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+  const handleUpdateStatus = async (
+    orderId: string,
+    newStatus: string,
+    cancelReason?: string
+  ) => {
     if (!token) return;
     try {
       const apiUrl =
@@ -615,7 +702,10 @@ export default function OrderClient({ initialData }: OrderClientProps) {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ status: newStatus })
+          body: JSON.stringify({
+            status: newStatus,
+            cancelReason: cancelReason || undefined
+          })
         }
       );
       const data = await res.json();

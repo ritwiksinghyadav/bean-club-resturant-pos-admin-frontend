@@ -23,6 +23,7 @@ interface CartState {
   refreshToken: string | null;
   customer: Customer | null;
   orderType: 'dinein' | 'takeaway' | null;
+  specialNote: string;
   addItem: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void;
   removeItem: (menuItemId: string, variantId?: string) => void;
   updateQuantity: (
@@ -37,6 +38,7 @@ interface CartState {
     customer: Customer | null
   ) => void;
   setOrderType: (type: 'dinein' | 'takeaway' | null) => void;
+  setSpecialNote: (note: string) => void;
   logout: () => void;
 }
 
@@ -48,6 +50,7 @@ export const useCartStore = create<CartState>()(
       refreshToken: null,
       customer: null,
       orderType: null,
+      specialNote: '',
       addItem: (newItem) =>
         set((state) => {
           const existingIndex = state.items.findIndex(
@@ -86,17 +89,19 @@ export const useCartStore = create<CartState>()(
             )
             .filter((item) => item.quantity > 0)
         })),
-      clearCart: () => set({ items: [], orderType: null }),
+      clearCart: () => set({ items: [], orderType: null, specialNote: '' }),
       setAuth: (token, refreshToken, customer) =>
         set({ token, refreshToken, customer }),
       setOrderType: (orderType) => set({ orderType }),
+      setSpecialNote: (specialNote) => set({ specialNote }),
       logout: () =>
         set({
           token: null,
           refreshToken: null,
           customer: null,
           items: [],
-          orderType: null
+          orderType: null,
+          specialNote: ''
         })
     }),
     {

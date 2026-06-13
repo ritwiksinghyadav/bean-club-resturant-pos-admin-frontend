@@ -64,6 +64,9 @@ export default function CheckoutScreen({
   const [promoInput, setPromoInput] = useState('');
   const [loadingOffer, setLoadingOffer] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const specialNote = useCartStore((s) => s.specialNote);
+  const setSpecialNote = useCartStore((s) => s.setSpecialNote);
+  const [showInstruction, setShowInstruction] = useState(!!specialNote);
   const orderType = useCartStore((s) => s.orderType) || 'takeaway';
   const setOrderType = useCartStore((s) => s.setOrderType);
 
@@ -140,6 +143,49 @@ export default function CheckoutScreen({
             Takeaway
           </button>
         </div>
+      </div>
+
+      {/* Special Instruction Note */}
+      <div className='space-y-3 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm'>
+        <label className='flex cursor-pointer items-center gap-3 select-none'>
+          <input
+            type='checkbox'
+            className='h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500'
+            checked={showInstruction}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setShowInstruction(checked);
+              if (!checked) {
+                setSpecialNote('');
+              }
+            }}
+          />
+          <div className='flex-1'>
+            <p className='text-xs font-bold text-slate-800'>
+              Add special instructions?
+            </p>
+            <p className='mt-0.5 text-[10px] text-slate-500'>
+              E.g., less sugar, extra hot, no onions, etc.
+            </p>
+          </div>
+        </label>
+        {showInstruction && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className='overflow-hidden pt-2'
+          >
+            <textarea
+              id='specialNoteCheckout'
+              rows={2}
+              value={specialNote}
+              onChange={(e) => setSpecialNote(e.target.value)}
+              placeholder='Enter your instructions here...'
+              className='w-full rounded-2xl border border-slate-200 bg-white p-3 text-xs font-semibold text-slate-700 transition-all outline-none placeholder:text-slate-400 focus:border-red-600 focus:ring-1 focus:ring-red-600'
+            />
+          </motion.div>
+        )}
       </div>
 
       {/* Order Details List */}

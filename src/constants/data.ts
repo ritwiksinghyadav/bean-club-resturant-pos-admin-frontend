@@ -102,10 +102,10 @@ export const navItems: NavItem[] = [
     items: []
   },
   {
-    title: 'Loyalty Settings',
-    url: '/dashboard/loyalty-settings',
+    title: 'Settings',
+    url: '/dashboard/settings',
     icon: 'settings',
-    shortcut: ['l', 's'],
+    shortcut: ['s', 'e'],
     isActive: false,
     items: []
   },
