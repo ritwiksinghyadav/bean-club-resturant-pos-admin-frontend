@@ -1,5 +1,6 @@
 import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
+import { isRouteAllowed, AdminRole } from '@/lib/rbac';
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
@@ -54,6 +55,16 @@ export default auth((req) => {
 
   if (!isLoggedIn) {
     return Response.redirect(new URL('/auth/sign-in', nextUrl));
+  }
+
+  // Role-based route guard for admin panel
+  if (pathname.startsWith('/dashboard')) {
+    const role = (req.auth?.user as any)?.role as AdminRole | undefined;
+    if (role && !isRouteAllowed(role, pathname)) {
+      const fallbackUrl =
+        role === 'kitchen' ? '/dashboard/orders' : '/dashboard/overview';
+      return Response.redirect(new URL(fallbackUrl, nextUrl));
+    }
   }
 
   return;

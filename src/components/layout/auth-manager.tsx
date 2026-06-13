@@ -2,6 +2,7 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import { useEffect, useRef } from 'react';
+import { useAdminStore } from '@/store/admin-store';
 
 // Keep reference to the original fetch to prevent loop recursion and restore it on unmount
 const originalFetch = typeof window !== 'undefined' ? window.fetch : null;
@@ -9,6 +10,22 @@ const originalFetch = typeof window !== 'undefined' ? window.fetch : null;
 export default function AuthManager() {
   const { data: session, update } = useSession();
   const updatingRef = useRef(false);
+  const setAdminInfo = useAdminStore((state) => state.setAdminInfo);
+  const clearAdminInfo = useAdminStore((state) => state.clearAdminInfo);
+
+  // Sync session with admin store
+  useEffect(() => {
+    if (session?.user) {
+      setAdminInfo({
+        id: (session.user as any).id,
+        name: session.user.name || null,
+        email: session.user.email || null,
+        role: (session.user as any).role || null
+      });
+    } else {
+      clearAdminInfo();
+    }
+  }, [session, setAdminInfo, clearAdminInfo]);
 
   // Watch for session refresh errors and sign out
   useEffect(() => {
