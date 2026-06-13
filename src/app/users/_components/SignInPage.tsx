@@ -29,7 +29,7 @@ export default function SignInPage({ onSuccess }: SignInPageProps) {
   const [otpVal, setOtpVal] = useState<string[]>(Array(6).fill(''));
 
   // Timer & loading
-  const [countdown, setCountdown] = useState(60);
+  const [countdown, setCountdown] = useState(30);
   const [canResend, setCanResend] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -92,7 +92,7 @@ export default function SignInPage({ onSuccess }: SignInPageProps) {
           duration: 10000 // Show longer so dev/user can see code
         });
         setStep('otp');
-        setCountdown(60);
+        setCountdown(30);
         setOtpVal(Array(6).fill(''));
         // Focus first OTP input on transition
         setTimeout(() => {

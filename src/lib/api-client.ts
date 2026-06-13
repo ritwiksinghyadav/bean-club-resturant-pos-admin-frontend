@@ -33,8 +33,9 @@ export async function fetchWithUserAuth(
     try {
       const refreshRes = await fetch(`${getApiUrl()}/users/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: store.refreshToken })
+        headers: {
+          Authorization: `Bearer ${store.refreshToken}`
+        }
       });
 
       if (refreshRes.ok) {

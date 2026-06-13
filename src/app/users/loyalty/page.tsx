@@ -57,8 +57,9 @@ export default function CustomerLoyalty() {
         process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
       const res = await fetch(`${apiUrl}/users/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: storeRefreshToken })
+        headers: {
+          Authorization: `Bearer ${storeRefreshToken}`
+        }
       });
 
       if (res.status >= 400 && res.status < 500) {
@@ -236,7 +237,7 @@ export default function CustomerLoyalty() {
           </div>
         </div>
         <div className='flex items-center gap-2'>
-          {token && (
+          {/* {token && (
             <button
               onClick={() => fetchLoyalty()}
               disabled={loading}
@@ -247,7 +248,7 @@ export default function CustomerLoyalty() {
               />
               Refresh
             </button>
-          )}
+          )} */}
           {customer ? (
             <button
               onClick={() => setIsSettingsOpen(true)}

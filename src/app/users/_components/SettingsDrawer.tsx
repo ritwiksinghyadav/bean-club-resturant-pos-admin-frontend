@@ -59,7 +59,7 @@ export default function SettingsDrawer({
   const [showPhoneUpdate, setShowPhoneUpdate] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
-  const [countdown, setCountdown] = useState(60);
+  const [countdown, setCountdown] = useState(30);
   const [canResend, setCanResend] = useState(false);
   const [verifyingPhone, setVerifyingPhone] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -198,7 +198,7 @@ export default function SettingsDrawer({
           }
         );
         setOtpSent(true);
-        setCountdown(60);
+        setCountdown(30);
         setOtpVal(Array(6).fill(''));
         setTimeout(() => {
           otpRefs.current[0]?.focus();

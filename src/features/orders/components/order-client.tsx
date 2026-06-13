@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useQueryState, parseAsInteger, parseAsString } from 'nuqs';
+import { streamSSE } from '@/lib/sse';
 import {
   Check,
   X,
@@ -556,47 +557,48 @@ export default function OrderClient({ initialData }: OrderClientProps) {
 
     const apiUrl =
       process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-    const eventSource = new EventSource(
-      `${apiUrl}/admin/orders/stream?token=${token}`
+
+    const client = streamSSE(
+      `${apiUrl}/admin/orders/stream`,
+      token,
+      (event, dataStr) => {
+        if (event === 'connected') {
+          setSseConnected(true);
+        } else if (event === 'new_order') {
+          try {
+            const orderData = JSON.parse(dataStr);
+            toast.info(
+              `🔔 New order received: Token #${orderData.tokenNumber}`,
+              {
+                duration: 5000
+              }
+            );
+
+            // Play notification sound
+            try {
+              const audio = new Audio(
+                'https://assets.mixkit.co/active_storage/sfx/2869/2869-500.wav'
+              );
+              audio.volume = 0.5;
+              audio.play().catch(() => {});
+            } catch {}
+
+            refreshOrders();
+          } catch (err) {
+            console.error('Error parsing new order SSE event:', err);
+          }
+        } else if (event === 'order_status_changed') {
+          refreshOrders();
+        }
+      },
+      (err) => {
+        console.error('SSE Connection error:', err);
+        setSseConnected(false);
+      }
     );
 
-    eventSource.addEventListener('connected', () => {
-      setSseConnected(true);
-    });
-
-    eventSource.addEventListener('new_order', (event) => {
-      try {
-        const orderData = JSON.parse(event.data);
-        toast.info(`🔔 New order received: Token #${orderData.tokenNumber}`, {
-          duration: 5000
-        });
-
-        // Play notification sound
-        try {
-          const audio = new Audio(
-            'https://assets.mixkit.co/active_storage/sfx/2869/2869-500.wav'
-          );
-          audio.volume = 0.5;
-          audio.play().catch(() => {});
-        } catch {}
-
-        refreshOrders();
-      } catch (err) {
-        console.error('Error parsing new order SSE event:', err);
-      }
-    });
-
-    eventSource.addEventListener('order_status_changed', () => {
-      refreshOrders();
-    });
-
-    eventSource.onerror = (err) => {
-      console.error('SSE Connection error:', err);
-      setSseConnected(false);
-    };
-
     return () => {
-      eventSource.close();
+      client.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, page, perPage, activeTab, tokenSearch]);

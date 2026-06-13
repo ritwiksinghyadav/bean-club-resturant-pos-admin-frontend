@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchWithAuth } from '@/lib/api-client';
 import { isTokenExpired } from '@/lib/jwt';
+import { streamSSE } from '@/lib/sse';
 import SettingsDrawer from '../_components/SettingsDrawer';
 import AuthModal from '../_components/AuthModal';
 
@@ -506,8 +507,9 @@ export default function CustomerOrders() {
         process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
       const res = await fetch(`${apiUrl}/users/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: storeRefreshToken })
+        headers: {
+          Authorization: `Bearer ${storeRefreshToken}`
+        }
       });
       if (res.status >= 400 && res.status < 500) {
         setAuth(null, null, null);
@@ -578,43 +580,44 @@ export default function CustomerOrders() {
 
     const apiUrl =
       process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-    const eventSource = new EventSource(
-      `${apiUrl}/users/orders/stream?token=${token}`
+
+    const client = streamSSE(
+      `${apiUrl}/users/orders/stream`,
+      token,
+      (event, dataStr) => {
+        if (event === 'connected') {
+          setSseConnected(true);
+        } else if (event === 'order_status_changed') {
+          try {
+            const data = JSON.parse(dataStr);
+            toast.info(
+              `🔔 Order Status Update: Token #${data.tokenNumber} is now ${data.status.toUpperCase()}`,
+              { duration: 5000 }
+            );
+
+            // Play notification sound
+            try {
+              const audio = new Audio(
+                'https://assets.mixkit.co/active_storage/sfx/911/911-500.wav'
+              );
+              audio.volume = 0.5;
+              audio.play().catch(() => {});
+            } catch {}
+
+            fetchOrders(true);
+          } catch (err) {
+            console.error('Error parsing order status change SSE:', err);
+          }
+        }
+      },
+      (err) => {
+        console.error('SSE Connection error:', err);
+        setSseConnected(false);
+      }
     );
 
-    eventSource.addEventListener('connected', () => {
-      setSseConnected(true);
-    });
-
-    eventSource.addEventListener('order_status_changed', (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        toast.info(
-          `🔔 Order Status Update: Token #${data.tokenNumber} is now ${data.status.toUpperCase()}`,
-          { duration: 5000 }
-        );
-
-        // Play notification sound
-        try {
-          const audio = new Audio(
-            'https://assets.mixkit.co/active_storage/sfx/911/911-500.wav'
-          );
-          audio.volume = 0.5;
-          audio.play().catch(() => {});
-        } catch {}
-
-        fetchOrders(true);
-      } catch (err) {
-        console.error('Error parsing order status change SSE:', err);
-      }
-    });
-
-    eventSource.onerror = () => {
-      setSseConnected(false);
-    };
-
     return () => {
-      eventSource.close();
+      client.close();
     };
   }, [token, mounted]);
 
@@ -667,7 +670,7 @@ export default function CustomerOrders() {
           </div>
         </div>
         <div className='flex items-center gap-2'>
-          {token && (
+          {/* {token && (
             <button
               onClick={() => fetchOrders()}
               disabled={loading}
@@ -678,7 +681,7 @@ export default function CustomerOrders() {
               />
               Refresh
             </button>
-          )}
+          )} */}
           {customer ? (
             <button
               onClick={() => setIsSettingsOpen(true)}

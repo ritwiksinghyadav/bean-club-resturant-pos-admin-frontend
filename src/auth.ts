@@ -90,12 +90,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       try {
         const apiUrl =
           process.env.AUTH_API_URL || process.env.NEXT_PUBLIC_API_URL;
+        console.log('[NextAuth Refresh] Using apiUrl:', apiUrl);
         const res = await fetch(`${apiUrl}/admin/auth/refresh`, {
           method: 'POST',
-          body: JSON.stringify({
-            refreshToken: token.refreshToken
-          }),
-          headers: { 'Content-Type': 'application/json' }
+          headers: {
+            Authorization: `Bearer ${token.refreshToken}`
+          }
         });
 
         const responseData = await res.json();
