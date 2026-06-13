@@ -23,7 +23,9 @@ export function UserNav() {
 
   const user = {
     fullName: session?.user?.name || 'Admin User',
-    emailAddresses: [{ emailAddress: session?.user?.email || 'admin@beanclub.com' }],
+    emailAddresses: [
+      { emailAddress: session?.user?.email || 'admin@beanclub.com' }
+    ],
     imageUrl: session?.user?.image || undefined
   };
 
@@ -42,23 +44,21 @@ export function UserNav() {
       >
         <DropdownMenuLabel className='font-normal'>
           <div className='flex flex-col space-y-1'>
-            <p className='text-sm leading-none font-medium'>
-              {user.fullName}
-            </p>
+            <p className='text-sm leading-none font-medium'>{user.fullName}</p>
             <p className='text-muted-foreground text-xs leading-none'>
               {user.emailAddresses[0].emailAddress}
             </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuGroup>
+        {/* <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
             Profile
           </DropdownMenuItem>
           <DropdownMenuItem>Billing</DropdownMenuItem>
           <DropdownMenuItem>Settings</DropdownMenuItem>
           <DropdownMenuItem>New Team</DropdownMenuItem>
-        </DropdownMenuGroup>
+        </DropdownMenuGroup> */}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut}>Sign Out</DropdownMenuItem>
       </DropdownMenuContent>

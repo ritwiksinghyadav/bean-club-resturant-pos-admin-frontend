@@ -63,13 +63,15 @@ export default function AppSidebar() {
   const pathname = usePathname();
   const { isOpen } = useMediaQuery();
   const { data: session } = useSession();
-  
+
   const user = {
     fullName: session?.user?.name || 'Admin User',
-    emailAddresses: [{ emailAddress: session?.user?.email || 'admin@beanclub.com' }],
+    emailAddresses: [
+      { emailAddress: session?.user?.email || 'admin@beanclub.com' }
+    ],
     imageUrl: session?.user?.image || undefined
   };
-  
+
   const router = useRouter();
   const handleSwitchTenant = () => {
     // Tenant switching functionality would be implemented here
@@ -88,11 +90,15 @@ export default function AppSidebar() {
   return (
     <Sidebar collapsible='icon'>
       <SidebarHeader>
-        <OrgSwitcher
-          tenants={tenants}
-          defaultTenant={activeTenant}
-          onTenantSwitch={handleSwitchTenant}
-        />
+        <div className='text-sidebar-accent-foreground flex items-center gap-2 py-2'>
+          <div className='bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg'>
+            <Icons.logo className='size-4' />
+          </div>
+          <div className='grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden'>
+            <span className='truncate font-semibold'>Bean Club</span>
+            <span className='truncate text-xs'>Admin Panel</span>
+          </div>
+        </div>
       </SidebarHeader>
       <SidebarContent className='overflow-x-hidden'>
         <SidebarGroup>
@@ -192,7 +198,7 @@ export default function AppSidebar() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
-                <DropdownMenuGroup>
+                {/* <DropdownMenuGroup>
                   <DropdownMenuItem
                     onClick={() => router.push('/dashboard/profile')}
                   >
@@ -207,7 +213,7 @@ export default function AppSidebar() {
                     <IconBell className='mr-2 h-4 w-4' />
                     Notifications
                   </DropdownMenuItem>
-                </DropdownMenuGroup>
+                </DropdownMenuGroup> */}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
                   <IconLogout className='mr-2 h-4 w-4' />

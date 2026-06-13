@@ -14,9 +14,10 @@ export default function ThemeProvider({
   const isUserSide = pathname?.startsWith('/users') || pathname === '/';
 
   return (
-    <NextThemesProvider 
-      {...props} 
-      forcedTheme={isUserSide ? 'light' : props.forcedTheme}
+    <NextThemesProvider
+      {...props}
+      forcedTheme={'light'}
+      // forcedTheme={isUserSide ? 'light' : props.forcedTheme}
     >
       {children}
     </NextThemesProvider>

@@ -35,8 +35,7 @@ export default async function RootLayout({
 
   return (
     <html lang='en' suppressHydrationWarning>
-      <head>
-      </head>
+      <head></head>
       <body
         className={cn(
           'bg-background overflow-hidden overscroll-none font-sans antialiased',
@@ -49,7 +48,7 @@ export default async function RootLayout({
         <NuqsAdapter>
           <ThemeProvider
             attribute='class'
-            defaultTheme='system'
+            defaultTheme='light'
             enableSystem
             disableTransitionOnChange
           >
